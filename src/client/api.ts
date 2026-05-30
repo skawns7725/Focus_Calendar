@@ -28,6 +28,10 @@ export async function updateSettings(input: unknown) {
   return request("/api/settings", { method: "PUT", body: JSON.stringify(input) });
 }
 
+export async function getGoogleStatus() {
+  return request("/api/google/status");
+}
+
 async function request(path: string, init: RequestInit = {}) {
   const response = await fetch(path, {
     ...init,
@@ -39,4 +43,3 @@ async function request(path: string, init: RequestInit = {}) {
   }
   return response.json();
 }
-

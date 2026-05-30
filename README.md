@@ -19,6 +19,23 @@ npm run test:e2e
 npm run build
 ```
 
-## MVP Boundary
+## Google Cloud OAuth Setup
 
-현재 버전은 로컬 SQLite 데이터베이스와 읽기 전용 로컬 캘린더 어댑터를 사용합니다. 실제 Google OAuth, Google Calendar API 호출, 서버 예약 작업, 브라우저 푸시 전달은 후속 통합 범위입니다.
+1. [Google Cloud Console](https://console.cloud.google.com/)에서 `Focus Calendar` 프로젝트를 생성합니다.
+2. `APIs & Services`에서 `Google Calendar API`를 활성화합니다.
+3. OAuth 동의 화면을 구성합니다.
+4. OAuth 클라이언트 유형으로 `Web application`을 선택합니다.
+5. 승인된 리디렉션 URI에 `http://localhost:3000/api/google/callback`을 추가합니다.
+6. 발급된 값을 `.env`에 입력합니다.
+
+```env
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+GOOGLE_REDIRECT_URI="http://localhost:3000/api/google/callback"
+```
+
+기본 연결은 Google Calendar 읽기 권한만 요청합니다. 사용자가 설정에서 양방향 동기화를 선택한 경우에만 쓰기 권한을 추가 요청하며, 앱이 만든 `Focus Calendar` 전용 캘린더만 수정합니다.
+
+## Integration Boundary
+
+Google OAuth 코드와 전용 캘린더 생성 경계는 준비되어 있습니다. 운영 환경에서는 계정별 데이터 격리, 토큰 갱신, 백그라운드 동기화, 예약 이월 작업, 브라우저 푸시 전달을 추가해야 합니다.

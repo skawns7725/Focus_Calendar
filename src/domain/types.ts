@@ -8,6 +8,12 @@ export type QuestStatus =
 
 export type QuestKind = "flexible" | "fixed";
 
+export type RecurrenceRule =
+  | { frequency: "daily" }
+  | { frequency: "weekdays" }
+  | { frequency: "selected_weekdays"; weekdays: number[] }
+  | { frequency: "weekly" };
+
 export interface Quest {
   id: string;
   title: string;
@@ -19,4 +25,3 @@ export interface Quest {
   carryoverCount: number;
   status: QuestStatus;
 }
-

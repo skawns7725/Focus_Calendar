@@ -315,3 +315,59 @@ The MVP is acceptable when:
 ## 13. Implementation Boundary
 
 This specification covers one MVP implementation cycle. Later iterations may add Google Calendar write-back, richer rescheduling controls, multi-session quests, native mobile apps, or additional game mechanics, but these are outside the initial implementation plan.
+
+## 14. Approved Product Revision
+
+This revision supersedes earlier UI wording, theme, and Google Calendar write-back exclusions. Internal code may continue using the existing `quest` domain name to avoid unnecessary migration risk, but user-facing language must use ordinary productivity-app terminology.
+
+### 14.1 Product Name And User-Facing Language
+
+- Product name: `Focus Calendar`
+- `Quest Calendar` becomes `Focus Calendar`
+- `quest` becomes `task` or `to-do item` in user-facing copy
+- `Today's mission` becomes `Today's schedule`
+- `Priority Queue` becomes `Priority list`
+- `Focus mode: deadline priority` becomes `Sort order: deadline first`
+- Completion feedback remains brief and restrained
+- Game-like terminology, dramatic tone, and HUD-like phrasing are removed
+
+### 14.2 Theme
+
+The app supports three theme choices:
+
+- `light`: default for new users and first visit
+- `dark`: lower-glare option for dark environments
+- `system`: follows the device preference only after the user explicitly selects it
+
+The light theme uses white and neutral gray surfaces with a restrained green accent. The dark theme keeps comfortable low-light contrast while softening the current high-intensity game-like styling. The selected theme persists across visits.
+
+### 14.3 Google Calendar Authorization
+
+Google Calendar integration has two explicit modes:
+
+#### Default Read-Only Mode
+
+- Request calendar read authorization.
+- Import events as fixed blocks.
+- Do not write to any Google calendar.
+- The app remains useful when the user declines write authorization.
+
+#### Optional Two-Way Synchronization
+
+- Expose a setting named `Google Calendar two-way sync`.
+- Request incremental calendar write authorization only after the user enables this setting.
+- Create or locate a dedicated secondary calendar named `Focus Calendar`.
+- Write, update, and remove only app-owned task events inside that dedicated calendar.
+- Never modify the user's primary calendar or unrelated calendars.
+- Store a stable mapping between internal task IDs and Google event IDs.
+- If write authorization is revoked or synchronization fails, preserve internal task state and fall back to read-only behavior with a visible warning.
+
+### 14.4 Additional Validation Criteria
+
+11. A first visit renders in light theme.
+12. The user can choose light, dark, or system theme and the choice persists.
+13. User-facing screens contain no game-like task terminology.
+14. Read-only Google Calendar import works without write authorization.
+15. Enabling two-way synchronization requests incremental write authorization.
+16. Two-way writes affect only the dedicated `Focus Calendar` calendar.
+17. Revoked write authorization does not remove or corrupt internal tasks.

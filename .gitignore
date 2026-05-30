@@ -6,4 +6,6 @@ test-results/
 .env
 dev.db
 dev.db-journal
+outputs/
+work/
 

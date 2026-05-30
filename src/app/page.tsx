@@ -1,8 +1,6 @@
+import { Dashboard } from "@/components/dashboard";
+
 export default function HomePage() {
-  return (
-    <main>
-      <h1>Quest Calendar</h1>
-    </main>
-  );
+  return <Dashboard />;
 }
 

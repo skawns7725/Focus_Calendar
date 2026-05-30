@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Quest {
+  id              String   @id @default(cuid())
+  title           String
+  kind            String
+  deadline        DateTime
+  expectedMinutes Int
+  plannedStart    DateTime?
+  importance      Int
+  carryoverCount  Int      @default(0)
+  status          String
+  recurrenceJson  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CalendarBlock {
+  id         String   @id @default(cuid())
+  externalId String   @unique
+  title      String
+  start      DateTime
+  end        DateTime
+  updatedAt  DateTime @updatedAt
+}
+
+model Settings {
+  id           String @id @default("local")
+  weekdayStart String @default("09:00")
+  weekdayEnd   String @default("22:00")
+  weekendStart String @default("10:00")
+  weekendEnd   String @default("22:00")
+  defaultView  String @default("list")
+  timeZone     String @default("Asia/Seoul")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  kind      String
+  questId   String
+  message   String
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+}
+

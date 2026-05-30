@@ -7,7 +7,9 @@ const settingsInput = z.object({
   weekendStart: z.string().regex(/^\d{2}:\d{2}$/),
   weekendEnd: z.string().regex(/^\d{2}:\d{2}$/),
   defaultView: z.enum(["list", "day", "week"]),
-  timeZone: z.string().min(1)
+  timeZone: z.string().min(1),
+  theme: z.enum(["light", "dark", "system"]),
+  twoWaySync: z.boolean()
 });
 
 export function createSettingsService(repository: SettingsRepository) {
@@ -16,4 +18,3 @@ export function createSettingsService(repository: SettingsRepository) {
     update: (input: unknown) => repository.update(settingsInput.parse(input))
   };
 }
-

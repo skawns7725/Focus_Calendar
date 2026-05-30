@@ -41,20 +41,19 @@ export function Dashboard() {
 
   return (
     <AppShell
-      title="우선순위 퀘스트"
+      title="우선순위 할 일"
       subtitle="고민하지 말고, 위에서부터 하나씩 완료하세요."
-      actions={<button className="primary-button" type="button" onClick={() => setShowForm((visible) => !visible)}>+ 퀘스트 추가</button>}
+      actions={<button className="primary-button" type="button" onClick={() => setShowForm((visible) => !visible)}>+ 할 일 추가</button>}
     >
       <section className="dashboard-summary">
         <div><span>오늘 완료</span><strong>{completedCount}</strong></div>
-        <div><span>남은 퀘스트</span><strong>{quests.filter((quest) => quest.status !== "completed" && quest.status !== "abandoned").length}</strong></div>
-        <div><span>집중 모드</span><strong className="summary-text">마감 우선</strong></div>
+        <div><span>남은 할 일</span><strong>{quests.filter((quest) => quest.status !== "completed" && quest.status !== "abandoned").length}</strong></div>
+        <div><span>정렬 기준</span><strong className="summary-text">마감일 우선</strong></div>
       </section>
-      {showForm && <div className="form-panel"><div><p className="eyebrow">새로운 목표</p><h2>퀘스트 등록</h2></div><QuestForm onSubmit={addQuest} /></div>}
-      <div className="list-heading"><div><p className="eyebrow">Priority Queue</p><h2>지금 처리할 순서</h2></div><span>마감 → 중요도 → 이월 횟수</span></div>
+      {showForm && <div className="form-panel"><div><p className="eyebrow">새 할 일</p><h2>할 일 등록</h2></div><QuestForm onSubmit={addQuest} /></div>}
+      <div className="list-heading"><div><p className="eyebrow">우선순위 목록</p><h2>지금 처리할 순서</h2></div><span>마감 → 중요도 → 이월 횟수</span></div>
       <QuestList quests={quests} onComplete={finishQuest} onAbandon={abandon} />
       {toastVisible && <CompletionToast completedCount={completedCount} />}
     </AppShell>
   );
 }
-

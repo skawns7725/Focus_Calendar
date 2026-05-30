@@ -8,7 +8,7 @@ export function QuestCard({ quest, onComplete, onAbandon }: { quest: Quest; onCo
       <div className="quest-rank">{overdue ? "!" : quest.importance}</div>
       <div className="quest-copy">
         <div className="quest-topline">
-          <span className={`quest-chip ${overdue ? "danger" : ""}`}>{overdue ? "기한 초과" : quest.kind === "fixed" ? "시간 지정" : "유연한 퀘스트"}</span>
+          <span className={`quest-chip ${overdue ? "danger" : ""}`}>{overdue ? "기한 초과" : quest.kind === "fixed" ? "시간 지정" : "시간 조정 가능"}</span>
           {quest.carryoverCount > 0 && <span className="quest-chip muted">이월 {quest.carryoverCount}회</span>}
         </div>
         <h2>{quest.title}</h2>
@@ -29,4 +29,3 @@ function formatDate(value: string | null): string {
   if (!value) return "자동 배치";
   return new Intl.DateTimeFormat("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 }
-

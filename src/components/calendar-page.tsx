@@ -8,10 +8,9 @@ const demoBlocks: CalendarGridBlock[] = [
 
 export function CalendarPage({ mode }: { mode: "day" | "week" }) {
   return (
-    <AppShell title={mode === "day" ? "일간 캘린더" : "주간 캘린더"} subtitle="고정 일정과 내부 퀘스트 배치를 한눈에 확인하세요.">
+    <AppShell title={mode === "day" ? "일간 캘린더" : "주간 캘린더"} subtitle="고정 일정과 할 일 배치를 한눈에 확인하세요.">
       <div className="calendar-toolbar"><span>{mode === "day" ? "오늘" : "이번 주"}</span><strong>Google Calendar 일정은 읽기 전용입니다.</strong></div>
       <CalendarGrid blocks={demoBlocks} />
     </AppShell>
   );
 }
-

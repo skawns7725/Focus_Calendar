@@ -7,6 +7,8 @@ export interface UserSettings {
   weekendEnd: string;
   defaultView: "list" | "day" | "week";
   timeZone: string;
+  theme: "light" | "dark" | "system";
+  twoWaySync: boolean;
 }
 
 const defaultSettings: UserSettings = {
@@ -15,13 +17,19 @@ const defaultSettings: UserSettings = {
   weekendStart: "10:00",
   weekendEnd: "22:00",
   defaultView: "list",
-  timeZone: "Asia/Seoul"
+  timeZone: "Asia/Seoul",
+  theme: "light",
+  twoWaySync: false
 };
 
 export class SettingsRepository {
   async get(): Promise<UserSettings> {
     const settings = await db.settings.findUnique({ where: { id: "local" } });
-    return settings ? { ...settings, defaultView: settings.defaultView as UserSettings["defaultView"] } : defaultSettings;
+    return settings ? {
+      ...settings,
+      defaultView: settings.defaultView as UserSettings["defaultView"],
+      theme: settings.theme as UserSettings["theme"]
+    } : defaultSettings;
   }
 
   async update(input: UserSettings): Promise<UserSettings> {
@@ -30,7 +38,10 @@ export class SettingsRepository {
       create: { id: "local", ...input },
       update: input
     });
-    return { ...settings, defaultView: settings.defaultView as UserSettings["defaultView"] };
+    return {
+      ...settings,
+      defaultView: settings.defaultView as UserSettings["defaultView"],
+      theme: settings.theme as UserSettings["theme"]
+    };
   }
 }
-

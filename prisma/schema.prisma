@@ -39,6 +39,8 @@ model Settings {
   weekendEnd   String @default("22:00")
   defaultView  String @default("list")
   timeZone     String @default("Asia/Seoul")
+  theme        String @default("light")
+  twoWaySync   Boolean @default(false)
 }
 
 model Notification {
@@ -50,3 +52,22 @@ model Notification {
   readAt    DateTime?
 }
 
+model GoogleConnection {
+  id                  String   @id @default("local")
+  accessToken         String?
+  refreshToken        String?
+  tokenExpiresAt      DateTime?
+  scope               String?
+  dedicatedCalendarId String?
+  lastSyncedAt        DateTime?
+  lastSyncError       String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model GoogleEventMapping {
+  questId       String @id
+  calendarId    String
+  googleEventId String @unique
+  updatedAt     DateTime @updatedAt
+}

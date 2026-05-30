@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test.use({ viewport: { width: 390, height: 844 } });
 
 test("shows mobile navigation and slide completion", async ({ page, request }) => {
-  const title = `모바일 테스트 퀘스트 ${Date.now()}`;
+  const title = `모바일 테스트 할 일 ${Date.now()}`;
   await request.post("/api/quests", {
     data: {
       title,

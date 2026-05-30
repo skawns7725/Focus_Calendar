@@ -31,7 +31,7 @@ export function QuestForm({ onSubmit }: { onSubmit(input: QuestDraft): void | Pr
       setKind("flexible");
       setError("");
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : "퀘스트를 추가하지 못했습니다.");
+      setError(submissionError instanceof Error ? submissionError.message : "할 일을 추가하지 못했습니다.");
     }
   }
 
@@ -40,7 +40,7 @@ export function QuestForm({ onSubmit }: { onSubmit(input: QuestDraft): void | Pr
       <label>제목<input name="title" placeholder="예: 보고서 초안 작성" required /></label>
       <div className="form-row">
         <label>유형<select aria-label="유형" name="kind" value={kind} onChange={(event) => setKind(event.target.value as QuestDraft["kind"])}>
-          <option value="flexible">유연한 퀘스트</option><option value="fixed">시간 지정 퀘스트</option>
+          <option value="flexible">시간 조정 가능</option><option value="fixed">시간 지정</option>
         </select></label>
         <label>중요도<select name="importance" defaultValue="2"><option value="1">보통</option><option value="2">중요</option><option value="3">매우 중요</option></select></label>
       </div>
@@ -50,7 +50,7 @@ export function QuestForm({ onSubmit }: { onSubmit(input: QuestDraft): void | Pr
         <label>예상 소요 시간<input aria-label="예상 소요 시간" name="expectedMinutes" type="number" min="1" defaultValue="30" required /></label>
       </div>
       {error && <p className="form-error">{error}</p>}
-      <button className="primary-button" type="submit">퀘스트 추가</button>
+      <button className="primary-button" type="submit">할 일 추가</button>
     </form>
   );
 }
@@ -58,4 +58,3 @@ export function QuestForm({ onSubmit }: { onSubmit(input: QuestDraft): void | Pr
 function withOffset(value: string): string {
   return `${value}:00+09:00`;
 }
-

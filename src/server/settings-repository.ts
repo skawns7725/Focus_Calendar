@@ -23,7 +23,7 @@ const defaultSettings: UserSettings = {
   weekendEnd: "22:00",
   defaultView: "list",
   timeZone: "Asia/Seoul",
-  theme: "light",
+  theme: "system",
   twoWaySync: false,
   googleImportMode: null,
   selectedGoogleCalendarIds: [],

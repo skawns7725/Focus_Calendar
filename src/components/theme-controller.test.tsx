@@ -8,8 +8,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it("defaults to light theme on the first visit", () => {
+it("follows the device preference on the first visit", () => {
   expect(resolveTheme(null, false)).toBe("light");
+  expect(resolveTheme(null, true)).toBe("dark");
 });
 
 it("restores a stored dark theme", () => {
@@ -34,4 +35,3 @@ it("follows the device preference when system theme is stored", () => {
   act(() => listeners.forEach((listener) => listener()));
   expect(document.documentElement.dataset.theme).toBe("light");
 });
-

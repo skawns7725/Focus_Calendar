@@ -9,8 +9,8 @@ const storageKey = "focus-calendar-theme";
 
 export function resolveTheme(theme: ThemeChoice | null, devicePrefersDark: boolean): EffectiveTheme {
   if (theme === "dark") return "dark";
-  if (theme === "system") return devicePrefersDark ? "dark" : "light";
-  return "light";
+  if (theme === "light") return "light";
+  return devicePrefersDark ? "dark" : "light";
 }
 
 export function ThemeController() {
@@ -36,6 +36,5 @@ export function saveTheme(theme: ThemeChoice) {
 
 export function readStoredTheme(): ThemeChoice {
   const value = window.localStorage.getItem(storageKey);
-  return value === "dark" || value === "system" ? value : "light";
+  return value === "light" || value === "dark" ? value : "system";
 }
-

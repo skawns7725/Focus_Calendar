@@ -47,7 +47,7 @@ model Settings {
   weekendEnd                    String  @default("22:00")
   defaultView                   String  @default("list")
   timeZone                      String  @default("Asia/Seoul")
-  theme                         String  @default("light")
+  theme                         String  @default("system")
   twoWaySync                    Boolean @default(false)
   googleImportMode              String?
   selectedGoogleCalendarIdsJson String  @default("[]")

@@ -38,7 +38,7 @@ interface GoogleCalendar {
 
 const defaults: Settings = {
   weekdayStart: "09:00", weekdayEnd: "22:00", weekendStart: "10:00", weekendEnd: "22:00",
-  defaultView: "list", timeZone: "Asia/Seoul", theme: "light", twoWaySync: false,
+  defaultView: "list", timeZone: "Asia/Seoul", theme: "system", twoWaySync: false,
   googleImportMode: null, selectedGoogleCalendarIds: [],
   notificationPromptCompleted: false, browserNotificationsEnabled: false, reminderMinutes: 10
 };
@@ -120,7 +120,11 @@ export function SettingsPage() {
           <label>주말 시작<input type="time" value={settings.weekendStart} onChange={(event) => setSettings({ ...settings, weekendStart: event.target.value })} /></label>
           <label>주말 종료<input type="time" value={settings.weekendEnd} onChange={(event) => setSettings({ ...settings, weekendEnd: event.target.value })} /></label>
           <label>기본 시작 화면<select value={settings.defaultView} onChange={(event) => setSettings({ ...settings, defaultView: event.target.value as Settings["defaultView"] })}><option value="list">할 일 목록</option><option value="day">일간 캘린더</option><option value="week">주간 캘린더</option></select></label>
-          <label>테마<select value={settings.theme} onChange={(event) => setSettings({ ...settings, theme: event.target.value as ThemeChoice })}><option value="light">라이트</option><option value="dark">다크</option><option value="system">시스템 설정 따르기</option></select></label>
+          <label>테마<select value={settings.theme} onChange={(event) => {
+            const theme = event.target.value as ThemeChoice;
+            setSettings({ ...settings, theme });
+            saveTheme(theme);
+          }}><option value="light">라이트</option><option value="dark">다크</option><option value="system">시스템 설정 따르기</option></select></label>
         </div>
 
         {google.connected && <section>

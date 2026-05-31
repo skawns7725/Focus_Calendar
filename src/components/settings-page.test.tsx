@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsPage } from "./settings-page";
 
 vi.mock("@/client/api", () => ({
@@ -23,6 +23,7 @@ vi.mock("@/client/api", () => ({
 
 describe("settings page", () => {
   beforeEach(() => vi.clearAllMocks());
+  afterEach(cleanup);
 
   it("shows initial calendar selection and manual sync controls", async () => {
     render(<SettingsPage />);
@@ -32,5 +33,11 @@ describe("settings page", () => {
     expect(await screen.findByLabelText("업무")).toBeInTheDocument();
     expect(await screen.findByText("브라우저 알림")).toBeInTheDocument();
     expect(screen.getByLabelText("시작 전 알림")).toHaveValue(10);
+  });
+
+  it("applies a selected theme immediately", async () => {
+    render(<SettingsPage />);
+    fireEvent.change(await screen.findByLabelText("테마"), { target: { value: "dark" } });
+    expect(document.documentElement.dataset.theme).toBe("dark");
   });
 });

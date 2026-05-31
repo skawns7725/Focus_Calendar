@@ -52,6 +52,11 @@ export class SettingsRepository {
       selectedGoogleCalendarIds: JSON.parse(settings.selectedGoogleCalendarIdsJson) as string[]
     };
   }
+
+  async enableTwoWaySync() {
+    const settings = await this.get();
+    return this.update({ ...settings, twoWaySync: true });
+  }
 }
 
 function toStoredSettings(input: UserSettings) {

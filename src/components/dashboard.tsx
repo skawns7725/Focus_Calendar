@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Quest } from "@/domain/types";
-import { abandonQuest, completeQuest, createQuest, listQuests } from "@/client/api";
+import { abandonQuest, completeQuest, createQuest, listQuests, syncGoogleCalendar } from "@/client/api";
 import { AppShell } from "./app-shell";
 import { CompletionToast } from "./completion-toast";
 import { QuestForm, QuestDraft } from "./quest-form";
@@ -18,11 +18,16 @@ export function Dashboard() {
     setQuests(await listQuests());
   }
 
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => { void syncAndRefresh(); }, []);
+
+  async function syncAndRefresh() {
+    await syncGoogleCalendar().catch(() => undefined);
+    await refresh();
+  }
 
   async function addQuest(input: QuestDraft) {
     await createQuest(input);
-    await refresh();
+    await syncAndRefresh();
     setShowForm(false);
   }
 
@@ -30,13 +35,13 @@ export function Dashboard() {
     await completeQuest(id);
     setCompletedCount((count) => count + 1);
     setToastVisible(true);
-    await refresh();
+    await syncAndRefresh();
     window.setTimeout(() => setToastVisible(false), 2400);
   }
 
   async function abandon(id: string) {
     await abandonQuest(id);
-    await refresh();
+    await syncAndRefresh();
   }
 
   return (

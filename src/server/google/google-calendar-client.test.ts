@@ -48,6 +48,15 @@ describe("Google Calendar client", () => {
     expect(request).toHaveBeenCalledWith(expect.stringContaining("syncToken=cursor"), expect.anything());
   });
 
+  it("uses a page token while reading the next result page", async () => {
+    const request = vi.fn(async () => new Response(JSON.stringify({ items: [], nextSyncToken: "next" }), { status: 200 }));
+    const client = new GoogleCalendarClient("access", request);
+
+    await client.listEvents("primary", { pageToken: "page-2" });
+
+    expect(request).toHaveBeenCalledWith(expect.stringContaining("pageToken=page-2"), expect.anything());
+  });
+
   it("reports an expired sync token", async () => {
     const client = new GoogleCalendarClient("access", vi.fn(async () => new Response("", { status: 410 })));
     await expect(client.listEvents("primary", { syncToken: "expired" })).rejects.toBeInstanceOf(GoogleSyncTokenExpiredError);

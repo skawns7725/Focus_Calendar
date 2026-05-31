@@ -32,6 +32,14 @@ export async function getGoogleStatus() {
   return request("/api/google/status");
 }
 
+export async function listGoogleCalendars() {
+  return request("/api/google/calendars");
+}
+
+export async function syncGoogleCalendar() {
+  return request("/api/google/sync", { method: "POST" });
+}
+
 async function request(path: string, init: RequestInit = {}) {
   const response = await fetch(path, {
     ...init,

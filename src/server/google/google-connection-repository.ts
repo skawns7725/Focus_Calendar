@@ -18,11 +18,13 @@ export class GoogleConnectionRepository {
   }
 
   async recordSyncSuccess() {
-    return db.googleConnection.update({ where: { id: "local" }, data: { lastSyncedAt: new Date(), lastSyncError: null } });
+    const data = { lastSyncedAt: new Date(), lastSyncError: null };
+    return db.googleConnection.upsert({ where: { id: "local" }, create: { id: "local", ...data }, update: data });
   }
 
   async recordSyncError(error: string) {
-    return db.googleConnection.update({ where: { id: "local" }, data: { lastSyncError: error } });
+    const data = { lastSyncError: error };
+    return db.googleConnection.upsert({ where: { id: "local" }, create: { id: "local", ...data }, update: data });
   }
 
   setDedicatedCalendar(id: string) {

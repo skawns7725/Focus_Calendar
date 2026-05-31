@@ -23,13 +23,14 @@ export interface GoogleCalendarEvent {
 
 export interface GoogleEventPage {
   items?: GoogleCalendarEvent[];
+  nextPageToken?: string;
   nextSyncToken?: string;
 }
 
 export interface GoogleCalendarGateway {
   ensureDedicatedCalendar(): Promise<GoogleCalendarSummary>;
   listCalendars(): Promise<GoogleCalendarSummary[]>;
-  listEvents(calendarId: string, options?: { syncToken?: string; timeMin?: string; timeMax?: string }): Promise<GoogleEventPage>;
+  listEvents(calendarId: string, options?: { syncToken?: string; pageToken?: string; timeMin?: string; timeMax?: string }): Promise<GoogleEventPage>;
   createTaskEvent(calendarId: string, input: GoogleEventInput): Promise<{ id: string }>;
   updateTaskEvent(calendarId: string, eventId: string, input: GoogleEventInput): Promise<{ id: string }>;
   deleteTaskEvent(calendarId: string, eventId: string): Promise<void>;
@@ -57,9 +58,10 @@ export class GoogleCalendarClient implements GoogleCalendarGateway {
     return result.items ?? [];
   }
 
-  async listEvents(calendarId = "primary", options: { syncToken?: string; timeMin?: string; timeMax?: string } = {}) {
+  async listEvents(calendarId = "primary", options: { syncToken?: string; pageToken?: string; timeMin?: string; timeMax?: string } = {}) {
     const params = new URLSearchParams({ singleEvents: "true" });
     if (options.syncToken) params.set("syncToken", options.syncToken);
+    if (options.pageToken) params.set("pageToken", options.pageToken);
     if (options.timeMin) params.set("timeMin", options.timeMin);
     if (options.timeMax) params.set("timeMax", options.timeMax);
     return this.request<GoogleEventPage>(`/calendars/${encodeURIComponent(calendarId)}/events?${params.toString()}`);

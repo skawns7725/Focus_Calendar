@@ -52,6 +52,7 @@ export class PrismaGoogleSyncRepository {
       plannedStart: quest.plannedStart?.toISOString() ?? null,
       importance: quest.importance as 1 | 2 | 3,
       carryoverCount: quest.carryoverCount,
+      lastCarryoverDate: quest.lastCarryoverDate,
       status: quest.status as QuestStatus
     }));
   }

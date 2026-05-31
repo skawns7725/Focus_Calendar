@@ -23,5 +23,6 @@ export interface Quest {
   plannedStart: string | null;
   importance: 1 | 2 | 3;
   carryoverCount: number;
+  lastCarryoverDate: string | null;
   status: QuestStatus;
 }

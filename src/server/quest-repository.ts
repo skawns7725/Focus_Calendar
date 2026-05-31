@@ -15,6 +15,7 @@ export interface QuestRepository {
   list(): Promise<Quest[]>;
   save(input: SaveQuestInput): Promise<Quest>;
   update(id: string, changes: Partial<Quest>): Promise<Quest | null>;
+  delete(id: string): Promise<boolean>;
 }
 
 export class PrismaQuestRepository implements QuestRepository {
@@ -46,6 +47,10 @@ export class PrismaQuestRepository implements QuestRepository {
       return null;
     }
   }
+
+  async delete(id: string): Promise<boolean> {
+    return (await db.quest.deleteMany({ where: { id } })).count > 0;
+  }
 }
 
 function toQuest(stored: StoredQuest): Quest {
@@ -58,7 +63,7 @@ function toQuest(stored: StoredQuest): Quest {
     plannedStart: stored.plannedStart?.toISOString() ?? null,
     importance: stored.importance as 1 | 2 | 3,
     carryoverCount: stored.carryoverCount,
+    lastCarryoverDate: stored.lastCarryoverDate,
     status: stored.status as QuestStatus
   };
 }
-

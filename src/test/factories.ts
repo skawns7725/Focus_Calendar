@@ -10,8 +10,8 @@ export function quest(overrides: Partial<Quest> = {}): Quest {
     plannedStart: "2026-06-01T09:00:00+09:00",
     importance: 1,
     carryoverCount: 0,
+    lastCarryoverDate: null,
     status: "scheduled",
     ...overrides
   };
 }
-

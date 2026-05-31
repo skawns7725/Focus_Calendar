@@ -98,3 +98,32 @@ curl -X POST http://localhost:3000/api/schedule/reconcile \
 ```
 
 When `SCHEDULER_SECRET` is unset, local calls are allowed without the header. In production, configure a random secret and schedule this request every 15 minutes.
+
+## Container Deployment
+
+Build and run one application replica with a persistent `/data` volume:
+
+```bash
+docker build -t focus-calendar .
+docker run --rm -p 3000:3000 \
+  -v focus-calendar-data:/data \
+  --env-file .env.production \
+  -e DATABASE_URL="file:/data/focus-calendar.db" \
+  focus-calendar
+```
+
+Use HTTPS in production. Set `GOOGLE_REDIRECT_URI` to the deployed `/api/google/callback` URL and register that exact URL in Google Cloud Console. The container applies the Prisma schema before starting the server.
+
+Configure the hosting platform scheduler:
+
+```bash
+# Every 15 minutes
+curl -X POST https://example.com/api/schedule/reconcile \
+  -H "Authorization: Bearer $SCHEDULER_SECRET"
+
+# Every 5 minutes
+curl -X POST https://example.com/api/notifications/dispatch \
+  -H "Authorization: Bearer $SCHEDULER_SECRET"
+```
+
+SQLite requires one running application replica and a persistent disk. Mobile users can install the responsive site as a home-screen shortcut through the browser menu.

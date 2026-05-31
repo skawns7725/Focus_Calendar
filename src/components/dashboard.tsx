@@ -22,7 +22,7 @@ export function Dashboard() {
   const [pushStatus, setPushStatus] = useState<PushStatus | null>(null);
 
   async function refresh() {
-    setQuests(await listQuests());
+    setQuests(await listQuests().catch(() => []));
   }
 
   useEffect(() => {

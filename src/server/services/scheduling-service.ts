@@ -1,54 +1,91 @@
 import { reconcileQuest } from "@/domain/carryover";
-import { findEarliestSlot } from "@/domain/scheduling";
+import { sortQuests } from "@/domain/priority";
+import { findEarliestSlot, TimeBlock } from "@/domain/scheduling";
+import { addLocalDays, localWeekday, toInstant, toLocalDate } from "@/domain/time-zone";
 import { CalendarRepository } from "../calendar/calendar-repository";
+import { NotificationRepository } from "../notification-repository";
 import { QuestRepository } from "../quest-repository";
 import { SettingsRepository } from "../settings-repository";
 
+interface NotificationWriter {
+  create(notification: { kind: string; questId: string; message: string }): Promise<unknown>;
+}
+
 export function createSchedulingService(
-  quests: QuestRepository,
-  settings: SettingsRepository,
-  calendar: CalendarRepository
+  quests: Pick<QuestRepository, "list" | "update">,
+  settings: Pick<SettingsRepository, "get">,
+  calendar: Pick<CalendarRepository, "list">,
+  notifications: NotificationWriter = new NotificationRepository()
 ) {
   return {
     async reconcile(now = new Date()) {
-      const allQuests = await quests.list();
       const userSettings = await settings.get();
-      const today = formatDate(now);
-      const nextDate = addDays(today, 1);
-      const start = new Date(`${nextDate}T00:00:00+09:00`);
-      const end = new Date(`${nextDate}T23:59:59+09:00`);
-      const fixedBlocks = (await calendar.list(start, end)).map((block) => ({
-        start: block.start.toISOString(),
-        end: block.end.toISOString()
-      }));
-      const isWeekend = [0, 6].includes(new Date(`${nextDate}T12:00:00+09:00`).getDay());
+      const today = toLocalDate(now, userSettings.timeZone);
+      const fixedBlocks = await blocksForDate(calendar, today, userSettings.timeZone);
+      const candidates = sortQuests(await quests.list(), now).filter((quest) => {
+        if (quest.status === "completed" || quest.status === "abandoned" || !quest.plannedStart) return false;
+        return toLocalDate(new Date(quest.plannedStart), userSettings.timeZone) < today && quest.lastCarryoverDate !== today;
+      });
+      const results = [];
 
-      return Promise.all(allQuests
-        .filter((quest) => quest.status !== "completed" && quest.status !== "abandoned" && quest.plannedStart)
-        .map(async (quest) => {
-          const slot = findEarliestSlot({
-            date: nextDate,
-            durationMinutes: quest.expectedMinutes,
-            activityStart: isWeekend ? userSettings.weekendStart : userSettings.weekdayStart,
-            activityEnd: isWeekend ? userSettings.weekendEnd : userSettings.weekdayEnd,
-            fixedBlocks,
-            timeZoneOffset: "+09:00"
-          });
-          const result = reconcileQuest(quest, { today, nextDaySlot: slot });
-          await quests.update(quest.id, result.quest);
-          return result;
-        }));
+      for (const quest of candidates) {
+        const slot = findSlot(today, quest.expectedMinutes, fixedBlocks, userSettings);
+        const result = reconcileQuest(quest, { today, nextDaySlot: slot });
+        result.quest.lastCarryoverDate = today;
+        await quests.update(quest.id, result.quest);
+        if (result.notification) await notifications.create(result.notification);
+        if (slot) fixedBlocks.push(slot);
+        results.push(result);
+      }
+      return results;
+    },
+
+    async moveToNearestAvailableDay(id: string, now = new Date()) {
+      const userSettings = await settings.get();
+      const task = (await quests.list()).find((quest) => quest.id === id);
+      if (!task) return null;
+      const today = toLocalDate(now, userSettings.timeZone);
+
+      for (let offset = 1; offset <= 365; offset += 1) {
+        const date = addLocalDays(today, offset);
+        const fixedBlocks = await blocksForDate(calendar, date, userSettings.timeZone);
+        const slot = findSlot(date, task.expectedMinutes, fixedBlocks, userSettings);
+        if (!slot) continue;
+        const updated = {
+          ...task,
+          plannedStart: slot.start,
+          carryoverCount: task.carryoverCount + 1,
+          lastCarryoverDate: today,
+          status: "scheduled" as const
+        };
+        await quests.update(id, updated);
+        await notifications.create({ kind: "carried_over", questId: id, message: `${task.title} moved to ${slot.start}` });
+        return updated;
+      }
+      return null;
     }
   };
 }
 
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(date);
+async function blocksForDate(calendar: Pick<CalendarRepository, "list">, date: string, timeZone: string): Promise<TimeBlock[]> {
+  const start = toInstant(date, "00:00", timeZone);
+  const end = toInstant(addLocalDays(date, 1), "00:00", timeZone);
+  return (await calendar.list(start, end)).map((block) => ({ start: block.start.toISOString(), end: block.end.toISOString() }));
 }
 
-function addDays(date: string, amount: number): string {
-  const value = new Date(`${date}T00:00:00Z`);
-  value.setUTCDate(value.getUTCDate() + amount);
-  return value.toISOString().slice(0, 10);
+function findSlot(
+  date: string,
+  durationMinutes: number,
+  fixedBlocks: TimeBlock[],
+  settings: Awaited<ReturnType<SettingsRepository["get"]>>
+) {
+  const isWeekend = [0, 6].includes(localWeekday(date));
+  return findEarliestSlot({
+    date,
+    durationMinutes,
+    activityStart: isWeekend ? settings.weekendStart : settings.weekdayStart,
+    activityEnd: isWeekend ? settings.weekendEnd : settings.weekdayEnd,
+    fixedBlocks,
+    timeZone: settings.timeZone
+  });
 }
-

@@ -9,12 +9,17 @@ export interface SlotRequest {
   activityStart: string;
   activityEnd: string;
   fixedBlocks: TimeBlock[];
-  timeZoneOffset: string;
+  timeZoneOffset?: string;
+  timeZone?: string;
 }
 
 export function findEarliestSlot(input: SlotRequest): TimeBlock | null {
-  const activityStart = new Date(`${input.date}T${input.activityStart}:00${input.timeZoneOffset}`);
-  const activityEnd = new Date(`${input.date}T${input.activityEnd}:00${input.timeZoneOffset}`);
+  const activityStart = input.timeZone
+    ? toInstant(input.date, input.activityStart, input.timeZone)
+    : new Date(`${input.date}T${input.activityStart}:00${input.timeZoneOffset}`);
+  const activityEnd = input.timeZone
+    ? toInstant(input.date, input.activityEnd, input.timeZone)
+    : new Date(`${input.date}T${input.activityEnd}:00${input.timeZoneOffset}`);
   const requiredMilliseconds = input.durationMinutes * 60_000;
   const blocks = [...input.fixedBlocks].sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
   let cursor = activityStart;
@@ -36,10 +41,11 @@ export function findEarliestSlot(input: SlotRequest): TimeBlock | null {
     : null;
 }
 
+import { toInstant } from "./time-zone";
+
 function toTimeBlock(start: Date, durationMilliseconds: number): TimeBlock {
   return {
     start: start.toISOString(),
     end: new Date(start.getTime() + durationMilliseconds).toISOString()
   };
 }
-

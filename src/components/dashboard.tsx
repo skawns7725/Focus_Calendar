@@ -10,6 +10,7 @@ import { CompletionToast } from "./completion-toast";
 import { QuestForm, QuestDraft } from "./quest-form";
 import { QuestList } from "./quest-list";
 import { NotificationPreferencePrompt, PushStatus } from "./notification-preference-prompt";
+import { PlusIcon } from "./icons";
 
 export function Dashboard() {
   const [quests, setQuests] = useState<Quest[]>([]);
@@ -87,7 +88,7 @@ export function Dashboard() {
     <AppShell
       title="우선순위 할 일"
       subtitle="고민하지 말고, 위에서부터 하나씩 완료하세요."
-      actions={<button className="primary-button" type="button" onClick={() => setShowForm((visible) => !visible)}>+ 할 일 추가</button>}
+      actions={<button className="primary-button" type="button" onClick={() => setShowForm((visible) => !visible)}><PlusIcon size={16} />할 일 추가</button>}
     >
       <section className="dashboard-summary">
         <div><span>오늘 완료</span><strong>{completedCount}</strong></div>

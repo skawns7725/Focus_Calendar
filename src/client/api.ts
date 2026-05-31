@@ -16,8 +16,24 @@ export async function abandonQuest(id: string): Promise<Quest> {
   return request(`/api/quests/${id}/abandon`, { method: "POST" });
 }
 
+export async function updateQuest(id: string, input: Partial<Quest>): Promise<Quest> {
+  return request(`/api/quests/${id}`, { method: "PUT", body: JSON.stringify(input) });
+}
+
 export async function reconcileSchedule() {
   return request("/api/schedule/reconcile", { method: "POST" });
+}
+
+export async function listUnreadNotifications() {
+  return request("/api/notifications");
+}
+
+export async function markNotificationsRead(ids: string[]) {
+  return request("/api/notifications", { method: "PATCH", body: JSON.stringify({ ids }) });
+}
+
+export async function moveQuestToNearestDay(id: string): Promise<Quest> {
+  return request(`/api/quests/${id}/move-nearest`, { method: "POST" });
 }
 
 export async function getSettings() {

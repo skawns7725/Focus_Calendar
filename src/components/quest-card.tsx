@@ -1,7 +1,7 @@
 import { Quest } from "@/domain/types";
 import { SlideToComplete } from "./slide-to-complete";
 
-export function QuestCard({ quest, onComplete, onAbandon }: { quest: Quest; onComplete(id: string): void; onAbandon(id: string): void }) {
+export function QuestCard({ quest, onComplete, onAbandon, onNearestDate, onEdit }: { quest: Quest; onComplete(id: string): void; onAbandon(id: string): void; onNearestDate(id: string): void; onEdit(id: string): void }) {
   const overdue = quest.status === "overdue" || new Date(quest.deadline) < new Date();
   return (
     <article className={`quest-card ${overdue ? "overdue" : ""}`} data-status={overdue ? "overdue" : quest.status}>
@@ -17,7 +17,8 @@ export function QuestCard({ quest, onComplete, onAbandon }: { quest: Quest; onCo
           <span>마감 {formatDate(quest.deadline)}</span>
           <span>{quest.expectedMinutes}분</span>
         </div>
-        {overdue && <div className="overdue-actions"><button type="button">새 마감 설정</button><button type="button" onClick={() => onAbandon(quest.id)}>포기</button></div>}
+        {quest.status === "needs_attention" && <div className="overdue-actions"><button type="button" onClick={() => onNearestDate(quest.id)}>가장 가까운 날짜로 이동</button><button type="button" onClick={() => onEdit(quest.id)}>직접 수정</button></div>}
+        {overdue && <div className="overdue-actions"><button type="button" onClick={() => onEdit(quest.id)}>새 마감 설정</button><button type="button" onClick={() => onAbandon(quest.id)}>포기</button></div>}
       </div>
       <button className="complete-button desktop-complete" type="button" onClick={() => onComplete(quest.id)}>완료</button>
       <SlideToComplete onComplete={() => onComplete(quest.id)} />

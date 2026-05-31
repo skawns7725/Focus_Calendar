@@ -44,6 +44,8 @@ Use a separate random `GOOGLE_OAUTH_STATE_SECRET` outside local development. It 
 
 ## Google Calendar Sync
 
+- Google Calendar read connection is also the Google login flow for hosted deployments.
+- OAuth requests `openid`, `email`, and `profile` identity scopes together with calendar access.
 - The default Google connection is read-only.
 - After connecting, choose `all calendars` or `selected calendars only` before the first import.
 - Imported calendars are used as busy blocks. The app never writes to them.
@@ -70,9 +72,17 @@ curl -X POST https://example.com/api/notifications/dispatch \
 
 Expired browser subscriptions are removed automatically after a push provider returns `404` or `410`.
 
+## Accounts And Data Isolation
+
+- Hosted production deployments require Google login before private API access.
+- Every task, setting, imported calendar block, notification, push subscription, reminder marker, and Google sync record is stored under one owner.
+- Scheduler requests fan out across owners only after `SCHEDULER_SECRET` authorization.
+- Local development keeps a `local` owner fallback so `npm run dev` and the local E2E suite work without Google credentials.
+- Existing local records remain under the local development owner and are not exposed to signed-in hosted accounts.
+
 ## Remaining Production Work
 
-The local app still needs account-level data isolation, a hosted scheduler configuration, encrypted token storage, and deployment configuration before public release.
+The local app still needs a hosted scheduler configuration, encrypted token storage, and deployment configuration before public release.
 
 ## Automatic Carryover
 

@@ -17,7 +17,8 @@ vi.mock("@/client/api", () => ({
   syncGoogleCalendar: vi.fn(),
   getPushStatus: vi.fn(async () => ({ configured: true, publicKey: "AQAB", notificationPromptCompleted: true, browserNotificationsEnabled: false, reminderMinutes: 10 })),
   subscribePush: vi.fn(),
-  unsubscribePush: vi.fn()
+  unsubscribePush: vi.fn(),
+  getAuthStatus: vi.fn(async () => ({ signedIn: false, localDevelopment: true, email: null }))
 }));
 
 describe("settings page", () => {

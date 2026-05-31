@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ReactNode } from "react";
+import { AccountStatus } from "./account-status";
 
 export function AppShell({ children, title, subtitle, actions }: { children: ReactNode; title: string; subtitle: string; actions?: ReactNode }) {
   return (
@@ -16,6 +17,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
           <span className="status-dot" />
           Google Calendar 연결 준비
         </div>
+        <AccountStatus />
       </aside>
       <main className="app-main">
         <header className="page-header">

@@ -68,6 +68,14 @@ export async function unsubscribePush(endpoint?: string) {
   return request("/api/push/subscribe", { method: "DELETE", body: JSON.stringify({ endpoint }) });
 }
 
+export async function getAuthStatus() {
+  return request("/api/auth/status");
+}
+
+export async function signOut() {
+  return request("/api/auth/sign-out", { method: "POST" });
+}
+
 async function request(path: string, init: RequestInit = {}) {
   const response = await fetch(path, {
     ...init,

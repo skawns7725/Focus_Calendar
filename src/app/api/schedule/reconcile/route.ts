@@ -1,14 +1,29 @@
 import { NextResponse } from "next/server";
-import { pushService, schedulingService } from "@/server/services";
+import { createUserServices } from "@/server/services";
 import { isSchedulerAuthorized } from "@/server/scheduler-auth";
-import { googleSyncService } from "@/server/google";
+import { createGoogleServices } from "@/server/google";
+import { getRequestServices } from "@/server/services/request-services";
+import { listOwnerIds } from "@/server/services/owner-registry";
 
 export async function POST(request: Request) {
-  if (!isSchedulerAuthorized(request.headers.get("authorization"), process.env.SCHEDULER_SECRET)) {
+  const authorization = request.headers.get("authorization");
+  if (authorization && !isSchedulerAuthorized(authorization, process.env.SCHEDULER_SECRET)) {
     return NextResponse.json({ error: "Unauthorized scheduler request" }, { status: 401 });
   }
+  if (authorization && process.env.SCHEDULER_SECRET) {
+    const results = [];
+    for (const ownerId of await listOwnerIds()) results.push(...await reconcileOwner(ownerId));
+    return NextResponse.json(results);
+  }
+  const { actor } = await getRequestServices(request);
+  return NextResponse.json(await reconcileOwner(actor.ownerId));
+}
+
+async function reconcileOwner(ownerId: string) {
+  const { schedulingService, pushService } = createUserServices(ownerId);
+  const { googleSyncService } = createGoogleServices(ownerId);
   const result = await schedulingService.reconcile(new Date());
   await googleSyncService.sync().catch(() => undefined);
   await pushService.dispatch(new Date()).catch(() => undefined);
-  return NextResponse.json(result);
+  return result;
 }

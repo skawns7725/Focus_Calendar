@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { isPushConfigured, settingsService } from "@/server/services";
+import { isPushConfigured } from "@/server/services";
+import { getRequestServices } from "@/server/services/request-services";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { settingsService } = await getRequestServices(request);
   const settings = await settingsService.get();
   return NextResponse.json({
     configured: isPushConfigured(),

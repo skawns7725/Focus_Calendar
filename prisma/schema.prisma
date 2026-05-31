@@ -23,24 +23,28 @@ model Quest {
 }
 
 model CalendarBlock {
-  id         String   @id @default(cuid())
-  externalId String   @unique
-  title      String
-  start      DateTime
-  end        DateTime
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(cuid())
+  externalId    String   @unique
+  calendarId    String?
+  googleEventId String?
+  title         String
+  start         DateTime
+  end           DateTime
+  updatedAt     DateTime @updatedAt
 }
 
 model Settings {
-  id           String @id @default("local")
-  weekdayStart String @default("09:00")
-  weekdayEnd   String @default("22:00")
-  weekendStart String @default("10:00")
-  weekendEnd   String @default("22:00")
-  defaultView  String @default("list")
-  timeZone     String @default("Asia/Seoul")
-  theme        String @default("light")
-  twoWaySync   Boolean @default(false)
+  id                            String  @id @default("local")
+  weekdayStart                  String  @default("09:00")
+  weekdayEnd                    String  @default("22:00")
+  weekendStart                  String  @default("10:00")
+  weekendEnd                    String  @default("22:00")
+  defaultView                   String  @default("list")
+  timeZone                      String  @default("Asia/Seoul")
+  theme                         String  @default("light")
+  twoWaySync                    Boolean @default(false)
+  googleImportMode              String?
+  selectedGoogleCalendarIdsJson String  @default("[]")
 }
 
 model Notification {
@@ -66,8 +70,15 @@ model GoogleConnection {
 }
 
 model GoogleEventMapping {
-  questId       String @id
-  calendarId    String
-  googleEventId String @unique
-  updatedAt     DateTime @updatedAt
+  questId         String    @id
+  calendarId      String
+  googleEventId   String    @unique
+  googleUpdatedAt DateTime?
+  updatedAt       DateTime  @updatedAt
+}
+
+model GoogleCalendarCursor {
+  calendarId String   @id
+  syncToken  String?
+  updatedAt  DateTime @updatedAt
 }

@@ -9,6 +9,8 @@ export interface UserSettings {
   timeZone: string;
   theme: "light" | "dark" | "system";
   twoWaySync: boolean;
+  googleImportMode: "all" | "selected" | null;
+  selectedGoogleCalendarIds: string[];
 }
 
 const defaultSettings: UserSettings = {
@@ -19,7 +21,9 @@ const defaultSettings: UserSettings = {
   defaultView: "list",
   timeZone: "Asia/Seoul",
   theme: "light",
-  twoWaySync: false
+  twoWaySync: false,
+  googleImportMode: null,
+  selectedGoogleCalendarIds: []
 };
 
 export class SettingsRepository {
@@ -28,20 +32,29 @@ export class SettingsRepository {
     return settings ? {
       ...settings,
       defaultView: settings.defaultView as UserSettings["defaultView"],
-      theme: settings.theme as UserSettings["theme"]
+      theme: settings.theme as UserSettings["theme"],
+      googleImportMode: settings.googleImportMode as UserSettings["googleImportMode"],
+      selectedGoogleCalendarIds: JSON.parse(settings.selectedGoogleCalendarIdsJson) as string[]
     } : defaultSettings;
   }
 
   async update(input: UserSettings): Promise<UserSettings> {
     const settings = await db.settings.upsert({
       where: { id: "local" },
-      create: { id: "local", ...input },
-      update: input
+      create: { id: "local", ...toStoredSettings(input) },
+      update: toStoredSettings(input)
     });
     return {
       ...settings,
       defaultView: settings.defaultView as UserSettings["defaultView"],
-      theme: settings.theme as UserSettings["theme"]
+      theme: settings.theme as UserSettings["theme"],
+      googleImportMode: settings.googleImportMode as UserSettings["googleImportMode"],
+      selectedGoogleCalendarIds: JSON.parse(settings.selectedGoogleCalendarIdsJson) as string[]
     };
   }
+}
+
+function toStoredSettings(input: UserSettings) {
+  const { selectedGoogleCalendarIds, ...settings } = input;
+  return { ...settings, selectedGoogleCalendarIdsJson: JSON.stringify(selectedGoogleCalendarIds) };
 }

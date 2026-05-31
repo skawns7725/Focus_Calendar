@@ -9,7 +9,9 @@ const settingsInput = z.object({
   defaultView: z.enum(["list", "day", "week"]),
   timeZone: z.string().min(1),
   theme: z.enum(["light", "dark", "system"]),
-  twoWaySync: z.boolean()
+  twoWaySync: z.boolean(),
+  googleImportMode: z.enum(["all", "selected"]).nullable(),
+  selectedGoogleCalendarIds: z.array(z.string())
 });
 
 export function createSettingsService(repository: SettingsRepository) {

@@ -3,6 +3,6 @@ export const calendarScopes = {
   write: "https://www.googleapis.com/auth/calendar"
 } as const;
 
-export const readOnlyScopes = [calendarScopes.read];
-export const writeScopes = [calendarScopes.read, calendarScopes.write];
-
+export const identityScopes = ["openid", "email", "profile"];
+export const readOnlyScopes = [...identityScopes, calendarScopes.read];
+export const writeScopes = [...identityScopes, calendarScopes.read, calendarScopes.write];

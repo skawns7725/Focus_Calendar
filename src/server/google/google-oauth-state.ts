@@ -5,10 +5,11 @@ export type GoogleOAuthMode = "read" | "write";
 interface GoogleOAuthState {
   mode: GoogleOAuthMode;
   expiresAt: number;
+  ownerId?: string;
 }
 
-export function createGoogleOAuthState(mode: GoogleOAuthMode, secret: string, now = Date.now()): string {
-  const payload = Buffer.from(JSON.stringify({ mode, expiresAt: now + 5 * 60 * 1000 })).toString("base64url");
+export function createGoogleOAuthState(mode: GoogleOAuthMode, secret: string, now = Date.now(), ownerId?: string): string {
+  const payload = Buffer.from(JSON.stringify({ mode, expiresAt: now + 5 * 60 * 1000, ...(ownerId ? { ownerId } : {}) })).toString("base64url");
   return `${payload}.${sign(payload, secret)}`;
 }
 

@@ -29,6 +29,11 @@ interface GoogleTokenResponse {
   scope?: string;
 }
 
+interface GoogleProfile {
+  sub: string;
+  email: string;
+}
+
 export async function exchangeGoogleCode(code: string, request: typeof fetch = fetch) {
   const response = await request("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -58,6 +63,16 @@ export async function refreshGoogleToken(refreshToken: string, request: typeof f
   });
   if (!response.ok) throw new Error("Google OAuth token refresh failed");
   return response.json() as Promise<GoogleTokenResponse>;
+}
+
+export async function fetchGoogleProfile(accessToken: string, request: typeof fetch = fetch): Promise<GoogleProfile> {
+  const response = await request("https://openidconnect.googleapis.com/v1/userinfo", {
+    headers: { authorization: `Bearer ${accessToken}` }
+  });
+  if (!response.ok) throw new Error("Google profile lookup failed");
+  const profile = await response.json() as Partial<GoogleProfile>;
+  if (!profile.sub || !profile.email) throw new Error("Google profile is incomplete");
+  return { sub: profile.sub, email: profile.email };
 }
 
 export function getGoogleRedirectUri() {

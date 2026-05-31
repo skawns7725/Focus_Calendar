@@ -3,8 +3,8 @@ import { createGoogleOAuthState, verifyGoogleOAuthState } from "./google-oauth-s
 
 describe("Google OAuth state", () => {
   it("round trips an unexpired signed mode", () => {
-    const state = createGoogleOAuthState("write", "secret", 1_000);
-    expect(verifyGoogleOAuthState(state, "secret", 1_001)).toEqual({ mode: "write", expiresAt: 301_000 });
+    const state = createGoogleOAuthState("write", "secret", 1_000, "owner-a");
+    expect(verifyGoogleOAuthState(state, "secret", 1_001)).toEqual({ mode: "write", expiresAt: 301_000, ownerId: "owner-a" });
   });
 
   it("rejects a modified oauth state", () => {

@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { buildGoogleAuthorizationUrl, getGoogleOAuthStateSecret, getGoogleRedirectUri, requireEnv } from "@/server/google/google-auth";
 import { createGoogleOAuthState } from "@/server/google/google-oauth-state";
+import { authService } from "@/server/auth/auth-service";
 
 export async function GET(request: Request) {
   const mode = new URL(request.url).searchParams.get("mode") === "write" ? "write" : "read";
   try {
+    const actor = mode === "write" ? await authService.getActor(request) : null;
+    if (mode === "write" && (!actor || actor.localDevelopment)) {
+      return NextResponse.json({ error: "Sign in before requesting write access" }, { status: 401 });
+    }
     return NextResponse.redirect(buildGoogleAuthorizationUrl({
       clientId: requireEnv("GOOGLE_CLIENT_ID"),
       redirectUri: getGoogleRedirectUri(),
-      state: createGoogleOAuthState(mode, getGoogleOAuthStateSecret()),
+      state: createGoogleOAuthState(mode, getGoogleOAuthStateSecret(), Date.now(), actor?.ownerId),
       mode
     }));
   } catch (error) {

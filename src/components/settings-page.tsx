@@ -1,8 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { getGoogleStatus, getSettings, listGoogleCalendars, syncGoogleCalendar, updateSettings } from "@/client/api";
+import { getGoogleStatus, getPushStatus, getSettings, listGoogleCalendars, subscribePush, syncGoogleCalendar, unsubscribePush, updateSettings } from "@/client/api";
+import { currentPushEndpoint, enableBrowserNotifications } from "@/client/push";
 import { AppShell } from "./app-shell";
+import { PushStatus } from "./notification-preference-prompt";
 import { saveTheme, ThemeChoice } from "./theme-controller";
 
 interface Settings {
@@ -16,6 +18,9 @@ interface Settings {
   twoWaySync: boolean;
   googleImportMode: "all" | "selected" | null;
   selectedGoogleCalendarIds: string[];
+  notificationPromptCompleted: boolean;
+  browserNotificationsEnabled: boolean;
+  reminderMinutes: number;
 }
 
 interface GoogleStatus {
@@ -34,7 +39,8 @@ interface GoogleCalendar {
 const defaults: Settings = {
   weekdayStart: "09:00", weekdayEnd: "22:00", weekendStart: "10:00", weekendEnd: "22:00",
   defaultView: "list", timeZone: "Asia/Seoul", theme: "light", twoWaySync: false,
-  googleImportMode: null, selectedGoogleCalendarIds: []
+  googleImportMode: null, selectedGoogleCalendarIds: [],
+  notificationPromptCompleted: false, browserNotificationsEnabled: false, reminderMinutes: 10
 };
 
 export function SettingsPage() {
@@ -43,6 +49,8 @@ export function SettingsPage() {
   const [syncing, setSyncing] = useState(false);
   const [google, setGoogle] = useState<GoogleStatus>({ configured: false, connected: false, dedicatedCalendarId: null });
   const [calendars, setCalendars] = useState<GoogleCalendar[]>([]);
+  const [push, setPush] = useState<PushStatus | null>(null);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   useEffect(() => {
     getSettings().then(setSettings).catch(() => setSettings(defaults));
@@ -50,6 +58,7 @@ export function SettingsPage() {
       setGoogle(status);
       if (status.connected) setCalendars(await listGoogleCalendars());
     }).catch(() => undefined);
+    getPushStatus().then(setPush).catch(() => undefined);
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -75,6 +84,30 @@ export function SettingsPage() {
       ? settings.selectedGoogleCalendarIds.filter((calendarId) => calendarId !== id)
       : [...settings.selectedGoogleCalendarIds, id];
     setSettings({ ...settings, selectedGoogleCalendarIds: selected });
+  }
+
+  async function enablePush() {
+    if (!push?.publicKey) return;
+    try {
+      await subscribePush(await enableBrowserNotifications(push.publicKey));
+      setPush(await getPushStatus());
+      setSettings({ ...settings, notificationPromptCompleted: true, browserNotificationsEnabled: true });
+      setPushError(null);
+    } catch (error) {
+      setPushError(error instanceof Error ? error.message : "브라우저 알림을 켜지 못했습니다.");
+    }
+  }
+
+  async function disablePush() {
+    try {
+      await unsubscribePush(await currentPushEndpoint());
+      const status = await getPushStatus();
+      setPush(status);
+      setSettings({ ...settings, notificationPromptCompleted: true, browserNotificationsEnabled: status.browserNotificationsEnabled });
+      setPushError(null);
+    } catch (error) {
+      setPushError(error instanceof Error ? error.message : "브라우저 알림을 끄지 못했습니다.");
+    }
   }
 
   return (
@@ -104,6 +137,22 @@ export function SettingsPage() {
         <button className="primary-button" type="submit">설정 저장</button>
         {saved && <p className="saved-message" role="status">설정을 저장했습니다.</p>}
       </form>
+
+      <section className="settings-card">
+        <div>
+          <p className="eyebrow">알림</p>
+          <h2>브라우저 알림</h2>
+          <p>일정 시작 전과 일정이 다음 날로 이동했을 때 이 기기에서 알려드립니다.</p>
+        </div>
+        <label>시작 전 알림<input aria-label="시작 전 알림" type="number" min="1" value={settings.reminderMinutes} onChange={(event) => setSettings({ ...settings, reminderMinutes: Number(event.target.value) })} />분 전</label>
+        {!push?.configured && <p className="form-error">브라우저 알림 서버 설정이 필요합니다.</p>}
+        {typeof Notification !== "undefined" && Notification.permission === "denied" && <p className="form-error">브라우저 설정에서 이 사이트의 알림 권한을 허용해 주세요.</p>}
+        {push?.browserNotificationsEnabled ? <p className="saved-message">브라우저 알림이 켜져 있습니다.</p> : <p>브라우저 알림이 꺼져 있습니다.</p>}
+        {push?.browserNotificationsEnabled
+          ? <button className="secondary-button" type="button" onClick={() => void disablePush()}>이 기기에서 알림 끄기</button>
+          : <button className="secondary-button" type="button" disabled={!push?.configured} onClick={() => void enablePush()}>브라우저 알림 켜기</button>}
+        {pushError && <p className="form-error">{pushError}</p>}
+      </section>
 
       <section className="settings-card">
         <div><p className="eyebrow">Google Calendar</p><h2>캘린더 연결</h2><p>기본 연결은 일정 가져오기만 허용합니다. 양방향 동기화는 직접 켠 경우에만 추가 권한을 요청합니다.</p></div>

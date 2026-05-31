@@ -10,7 +10,15 @@ export class NotificationRepository {
     return db.notification.findMany({ where: { readAt: null }, orderBy: { createdAt: "desc" } });
   }
 
+  listUndelivered() {
+    return db.notification.findMany({ where: { deliveredAt: null }, orderBy: { createdAt: "asc" } });
+  }
+
   markRead(ids: string[]) {
     return db.notification.updateMany({ where: { id: { in: ids } }, data: { readAt: new Date() } });
+  }
+
+  markDelivered(ids: string[]) {
+    return db.notification.updateMany({ where: { id: { in: ids } }, data: { deliveredAt: new Date() } });
   }
 }

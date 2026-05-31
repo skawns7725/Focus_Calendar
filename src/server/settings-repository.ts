@@ -11,6 +11,9 @@ export interface UserSettings {
   twoWaySync: boolean;
   googleImportMode: "all" | "selected" | null;
   selectedGoogleCalendarIds: string[];
+  notificationPromptCompleted: boolean;
+  browserNotificationsEnabled: boolean;
+  reminderMinutes: number;
 }
 
 const defaultSettings: UserSettings = {
@@ -23,7 +26,10 @@ const defaultSettings: UserSettings = {
   theme: "light",
   twoWaySync: false,
   googleImportMode: null,
-  selectedGoogleCalendarIds: []
+  selectedGoogleCalendarIds: [],
+  notificationPromptCompleted: false,
+  browserNotificationsEnabled: false,
+  reminderMinutes: 10
 };
 
 export class SettingsRepository {

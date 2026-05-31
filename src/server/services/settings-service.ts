@@ -11,7 +11,10 @@ const settingsInput = z.object({
   theme: z.enum(["light", "dark", "system"]),
   twoWaySync: z.boolean(),
   googleImportMode: z.enum(["all", "selected"]).nullable(),
-  selectedGoogleCalendarIds: z.array(z.string())
+  selectedGoogleCalendarIds: z.array(z.string()),
+  notificationPromptCompleted: z.boolean(),
+  browserNotificationsEnabled: z.boolean(),
+  reminderMinutes: z.number().int().positive()
 });
 
 export function createSettingsService(repository: SettingsRepository) {

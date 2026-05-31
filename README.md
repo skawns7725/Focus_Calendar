@@ -35,6 +35,9 @@ GOOGLE_CLIENT_SECRET="..."
 GOOGLE_REDIRECT_URI="http://localhost:3000/api/google/callback"
 GOOGLE_OAUTH_STATE_SECRET="..."
 SCHEDULER_SECRET="..."
+VAPID_SUBJECT="mailto:admin@example.com"
+VAPID_PUBLIC_KEY="..."
+VAPID_PRIVATE_KEY="..."
 ```
 
 Use a separate random `GOOGLE_OAUTH_STATE_SECRET` outside local development. It signs short-lived OAuth callback state.
@@ -51,9 +54,25 @@ Use a separate random `GOOGLE_OAUTH_STATE_SECRET` outside local development. It 
 - Sync runs when the dashboard opens, after task changes, and when `Sync now` is pressed in settings.
 - Incremental cursors, expiry recovery, pagination, and token refresh are covered by local fake-gateway tests.
 
+## Browser Push Notifications
+
+- The dashboard asks about browser notifications once on the first visit. The saved choice can be changed later in settings.
+- Each browser registers its own push subscription. Turning notifications off in settings removes only the current browser subscription.
+- Start reminders default to 10 minutes before a task and can be changed in settings.
+- Carryover and full-day conflicts also create push notifications.
+- Production deployments must use HTTPS and configure VAPID keys. Localhost works without HTTPS for development.
+- A hosted scheduler can dispatch pending notifications periodically:
+
+```bash
+curl -X POST https://example.com/api/notifications/dispatch \
+  -H "Authorization: Bearer $SCHEDULER_SECRET"
+```
+
+Expired browser subscriptions are removed automatically after a push provider returns `404` or `410`.
+
 ## Remaining Production Work
 
-The local app still needs account-level data isolation, a hosted scheduler configuration, browser push delivery, encrypted token storage, and deployment configuration before public release.
+The local app still needs account-level data isolation, a hosted scheduler configuration, encrypted token storage, and deployment configuration before public release.
 
 ## Automatic Carryover
 

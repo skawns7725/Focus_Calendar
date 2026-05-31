@@ -11,7 +11,10 @@ const baseSettings = {
   theme: "light" as const,
   twoWaySync: false,
   googleImportMode: null,
-  selectedGoogleCalendarIds: []
+  selectedGoogleCalendarIds: [],
+  notificationPromptCompleted: false,
+  browserNotificationsEnabled: false,
+  reminderMinutes: 10
 };
 
 describe("settings service", () => {
@@ -31,6 +34,27 @@ describe("settings service", () => {
     expect(repository.update).toHaveBeenCalledWith(expect.objectContaining({
       googleImportMode: "selected",
       selectedGoogleCalendarIds: ["primary", "work"]
+    }));
+  });
+
+  it("stores browser notification preferences", async () => {
+    const repository = {
+      get: vi.fn(),
+      update: vi.fn(async (input) => input)
+    };
+    const service = createSettingsService(repository);
+
+    await service.update({
+      ...baseSettings,
+      notificationPromptCompleted: true,
+      browserNotificationsEnabled: true,
+      reminderMinutes: 15
+    });
+
+    expect(repository.update).toHaveBeenCalledWith(expect.objectContaining({
+      notificationPromptCompleted: true,
+      browserNotificationsEnabled: true,
+      reminderMinutes: 15
     }));
   });
 });

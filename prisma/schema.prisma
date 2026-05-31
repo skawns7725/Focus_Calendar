@@ -46,6 +46,9 @@ model Settings {
   twoWaySync                    Boolean @default(false)
   googleImportMode              String?
   selectedGoogleCalendarIdsJson String  @default("[]")
+  notificationPromptCompleted   Boolean @default(false)
+  browserNotificationsEnabled   Boolean @default(false)
+  reminderMinutes               Int     @default(10)
 }
 
 model Notification {
@@ -55,6 +58,25 @@ model Notification {
   message   String
   createdAt DateTime @default(now())
   readAt    DateTime?
+  deliveredAt DateTime?
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ReminderDelivery {
+  id             String   @id @default(cuid())
+  questId        String
+  scheduledStart DateTime
+  sentAt         DateTime @default(now())
+
+  @@unique([questId, scheduledStart])
 }
 
 model GoogleConnection {

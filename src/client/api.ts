@@ -56,6 +56,18 @@ export async function syncGoogleCalendar() {
   return request("/api/google/sync", { method: "POST" });
 }
 
+export async function getPushStatus() {
+  return request("/api/push/status");
+}
+
+export async function subscribePush(input: unknown) {
+  return request("/api/push/subscribe", { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function unsubscribePush(endpoint?: string) {
+  return request("/api/push/subscribe", { method: "DELETE", body: JSON.stringify({ endpoint }) });
+}
+
 async function request(path: string, init: RequestInit = {}) {
   const response = await fetch(path, {
     ...init,

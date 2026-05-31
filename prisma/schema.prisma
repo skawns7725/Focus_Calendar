@@ -21,21 +21,26 @@ model Quest {
   lastCarryoverDate String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  ownerId         String   @default("local")
 }
 
 model CalendarBlock {
   id            String   @id @default(cuid())
-  externalId    String   @unique
+  externalId    String
   calendarId    String?
   googleEventId String?
   title         String
   start         DateTime
   end           DateTime
   updatedAt     DateTime @updatedAt
+  ownerId       String   @default("local")
+
+  @@unique([ownerId, externalId])
 }
 
 model Settings {
-  id                            String  @id @default("local")
+  id                            String  @id @default(cuid())
+  ownerId                       String  @unique @default("local")
   weekdayStart                  String  @default("09:00")
   weekdayEnd                    String  @default("22:00")
   weekendStart                  String  @default("10:00")
@@ -59,15 +64,19 @@ model Notification {
   createdAt DateTime @default(now())
   readAt    DateTime?
   deliveredAt DateTime?
+  ownerId   String   @default("local")
 }
 
 model PushSubscription {
   id        String   @id @default(cuid())
-  endpoint  String   @unique
+  endpoint  String
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  ownerId   String   @default("local")
+
+  @@unique([ownerId, endpoint])
 }
 
 model ReminderDelivery {
@@ -75,12 +84,14 @@ model ReminderDelivery {
   questId        String
   scheduledStart DateTime
   sentAt         DateTime @default(now())
+  ownerId        String   @default("local")
 
-  @@unique([questId, scheduledStart])
+  @@unique([ownerId, questId, scheduledStart])
 }
 
 model GoogleConnection {
-  id                  String   @id @default("local")
+  id                  String   @id @default(cuid())
+  ownerId             String   @unique @default("local")
   accessToken         String?
   refreshToken        String?
   tokenExpiresAt      DateTime?
@@ -93,15 +104,42 @@ model GoogleConnection {
 }
 
 model GoogleEventMapping {
-  questId         String    @id
+  id              String    @id @default(cuid())
+  questId         String
   calendarId      String
-  googleEventId   String    @unique
+  googleEventId   String
   googleUpdatedAt DateTime?
   updatedAt       DateTime  @updatedAt
+  ownerId         String    @default("local")
+
+  @@unique([ownerId, questId])
+  @@unique([ownerId, googleEventId])
 }
 
 model GoogleCalendarCursor {
-  calendarId String   @id
+  id         String   @id @default(cuid())
+  calendarId String
   syncToken  String?
   updatedAt  DateTime @updatedAt
+  ownerId    String   @default("local")
+
+  @@unique([ownerId, calendarId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  googleSubject String    @unique
+  email         String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  ownerId   String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 }

@@ -4,7 +4,7 @@ test.use({ viewport: { width: 390, height: 844 } });
 
 test("shows mobile navigation and slide completion", async ({ page, request }) => {
   const title = `모바일 테스트 할 일 ${Date.now()}`;
-  await request.post("/api/quests", {
+  const response = await request.post("/api/quests", {
     data: {
       title,
       kind: "flexible",
@@ -13,6 +13,7 @@ test("shows mobile navigation and slide completion", async ({ page, request }) =
       importance: 2
     }
   });
+  expect(response.ok()).toBeTruthy();
 
   await page.goto("/");
   await expect(page.getByRole("navigation", { name: "모바일 메뉴" })).toBeVisible();

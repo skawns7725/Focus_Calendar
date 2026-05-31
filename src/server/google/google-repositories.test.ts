@@ -27,4 +27,14 @@ describe("google repositories", () => {
     await expect(ownerB.getCursor("primary")).resolves.toBe("cursor-b");
     await expect(db.calendarBlock.count({ where: { externalId: block.externalId, ownerId: { in: owners } } })).resolves.toBe(2);
   });
+
+  it("stores encrypted tokens and returns decrypted values", async () => {
+    const ownerId = owners[0];
+    const repository = new GoogleConnectionRepository(ownerId, Buffer.alloc(32, 9).toString("base64"), "production");
+    await repository.saveTokens({ accessToken: "access-token", refreshToken: "refresh-token", expiresIn: 3600 });
+    const stored = await db.googleConnection.findUniqueOrThrow({ where: { ownerId } });
+    expect(stored.accessToken).toMatch(/^enc:v1:/);
+    expect(stored.refreshToken).toMatch(/^enc:v1:/);
+    await expect(repository.get()).resolves.toMatchObject({ accessToken: "access-token", refreshToken: "refresh-token" });
+  });
 });

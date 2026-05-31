@@ -34,6 +34,7 @@ GOOGLE_CLIENT_ID="..."
 GOOGLE_CLIENT_SECRET="..."
 GOOGLE_REDIRECT_URI="http://localhost:3000/api/google/callback"
 GOOGLE_OAUTH_STATE_SECRET="..."
+GOOGLE_TOKEN_ENCRYPTION_KEY="..."
 SCHEDULER_SECRET="..."
 VAPID_SUBJECT="mailto:admin@example.com"
 VAPID_PUBLIC_KEY="..."
@@ -41,6 +42,11 @@ VAPID_PRIVATE_KEY="..."
 ```
 
 Use a separate random `GOOGLE_OAUTH_STATE_SECRET` outside local development. It signs short-lived OAuth callback state.
+Set `GOOGLE_TOKEN_ENCRYPTION_KEY` to a base64-encoded 32-byte random key in production. It encrypts Google access and refresh tokens at rest. For example:
+
+```bash
+openssl rand -base64 32
+```
 
 ## Google Calendar Sync
 
@@ -80,9 +86,12 @@ Expired browser subscriptions are removed automatically after a push provider re
 - Local development keeps a `local` owner fallback so `npm run dev` and the local E2E suite work without Google credentials.
 - Existing local records remain under the local development owner and are not exposed to signed-in hosted accounts.
 
-## Remaining Production Work
+## Production Checklist
 
-The local app still needs a hosted scheduler configuration, encrypted token storage, and deployment configuration before public release.
+- Deploy one application replica with a persistent `/data` volume.
+- Configure HTTPS, Google OAuth, `GOOGLE_TOKEN_ENCRYPTION_KEY`, VAPID keys, and `SCHEDULER_SECRET`.
+- Schedule reconciliation every 15 minutes and notification dispatch every 5 minutes.
+- Back up the SQLite database volume regularly.
 
 ## Automatic Carryover
 

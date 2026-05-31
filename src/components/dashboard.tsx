@@ -29,6 +29,7 @@ export function Dashboard() {
   }, []);
 
   async function syncAndRefresh() {
+    await refresh();
     await reconcileSchedule().catch(() => undefined);
     await syncGoogleCalendar().catch(() => undefined);
     await refresh();

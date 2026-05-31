@@ -22,8 +22,15 @@ export function buildGoogleAuthorizationUrl(input: AuthorizationUrlInput): strin
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
-export async function exchangeGoogleCode(code: string) {
-  const response = await fetch("https://oauth2.googleapis.com/token", {
+interface GoogleTokenResponse {
+  access_token: string;
+  refresh_token?: string;
+  expires_in: number;
+  scope?: string;
+}
+
+export async function exchangeGoogleCode(code: string, request: typeof fetch = fetch) {
+  const response = await request("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -35,7 +42,22 @@ export async function exchangeGoogleCode(code: string) {
     })
   });
   if (!response.ok) throw new Error("Google OAuth token exchange failed");
-  return response.json() as Promise<{ access_token: string; refresh_token?: string; expires_in: number; scope?: string }>;
+  return response.json() as Promise<GoogleTokenResponse>;
+}
+
+export async function refreshGoogleToken(refreshToken: string, request: typeof fetch = fetch) {
+  const response = await request("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      refresh_token: refreshToken,
+      client_id: requireEnv("GOOGLE_CLIENT_ID"),
+      client_secret: requireEnv("GOOGLE_CLIENT_SECRET"),
+      grant_type: "refresh_token"
+    })
+  });
+  if (!response.ok) throw new Error("Google OAuth token refresh failed");
+  return response.json() as Promise<GoogleTokenResponse>;
 }
 
 export function getGoogleRedirectUri() {
@@ -52,3 +74,6 @@ export function requireEnv(name: "GOOGLE_CLIENT_ID" | "GOOGLE_CLIENT_SECRET") {
   return value;
 }
 
+export function getGoogleOAuthStateSecret() {
+  return process.env.GOOGLE_OAUTH_STATE_SECRET || requireEnv("GOOGLE_CLIENT_SECRET");
+}

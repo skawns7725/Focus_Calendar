@@ -5,15 +5,24 @@ export class GoogleConnectionRepository {
     return db.googleConnection.findUnique({ where: { id: "local" } });
   }
 
-  saveTokens(input: { accessToken: string; refreshToken?: string; expiresIn: number; scope?: string }) {
+  async saveTokens(input: { accessToken: string; refreshToken?: string; expiresIn: number; scope?: string }) {
+    const existing = await this.get();
     const data = {
       accessToken: input.accessToken,
-      refreshToken: input.refreshToken,
+      refreshToken: input.refreshToken ?? existing?.refreshToken,
       tokenExpiresAt: new Date(Date.now() + input.expiresIn * 1000),
       scope: input.scope,
       lastSyncError: null
     };
     return db.googleConnection.upsert({ where: { id: "local" }, create: { id: "local", ...data }, update: data });
+  }
+
+  async recordSyncSuccess() {
+    return db.googleConnection.update({ where: { id: "local" }, data: { lastSyncedAt: new Date(), lastSyncError: null } });
+  }
+
+  async recordSyncError(error: string) {
+    return db.googleConnection.update({ where: { id: "local" }, data: { lastSyncError: error } });
   }
 
   setDedicatedCalendar(id: string) {
@@ -31,4 +40,3 @@ export class GoogleConnectionRepository {
     };
   }
 }
-

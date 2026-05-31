@@ -1,16 +1,65 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { listCalendarBlocks, listQuests } from "@/client/api";
+import { Quest } from "@/domain/types";
 import { AppShell } from "./app-shell";
 import { CalendarGrid, CalendarGridBlock } from "./calendar-grid";
 
-const demoBlocks: CalendarGridBlock[] = [
-  { id: "google-focus", title: "팀 정기 회의", start: "2026-05-31T10:00:00+09:00", end: "2026-05-31T11:00:00+09:00", source: "calendar" },
-  { id: "quest-report", title: "보고서 초안 작성", start: "2026-05-31T13:30:00+09:00", end: "2026-05-31T14:30:00+09:00", source: "quest" }
-];
+interface ImportedBlock {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+}
 
 export function CalendarPage({ mode }: { mode: "day" | "week" }) {
+  const [blocks, setBlocks] = useState<CalendarGridBlock[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const { from, to } = visibleRange(mode);
+    Promise.all([listCalendarBlocks(from, to), listQuests()])
+      .then(([calendarBlocks, quests]: [ImportedBlock[], Quest[]]) => setBlocks(combineBlocks(calendarBlocks, quests, from, to)))
+      .catch(() => setError("일정을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."))
+      .finally(() => setLoading(false));
+  }, [mode]);
+
   return (
     <AppShell title={mode === "day" ? "일간 캘린더" : "주간 캘린더"} subtitle="고정 일정과 할 일 배치를 한눈에 확인하세요.">
       <div className="calendar-toolbar"><span>{mode === "day" ? "오늘" : "이번 주"}</span><strong>Google Calendar 일정은 읽기 전용입니다.</strong></div>
-      <CalendarGrid blocks={demoBlocks} />
+      {loading ? <p className="calendar-state">일정을 정리하고 있습니다.</p> : error ? <p className="calendar-state form-error">{error}</p> : <CalendarGrid blocks={blocks} />}
     </AppShell>
   );
+}
+
+function combineBlocks(calendarBlocks: ImportedBlock[], quests: Quest[], from: string, to: string): CalendarGridBlock[] {
+  const fromTime = new Date(from).getTime();
+  const toTime = new Date(to).getTime();
+  return [
+    ...calendarBlocks.map((block) => ({ ...block, source: "calendar" as const })),
+    ...quests
+      .filter((quest) => quest.plannedStart && quest.status !== "completed" && quest.status !== "abandoned")
+      .map((quest) => ({
+        id: quest.id,
+        title: quest.title,
+        start: quest.plannedStart!,
+        end: new Date(new Date(quest.plannedStart!).getTime() + quest.expectedMinutes * 60_000).toISOString(),
+        source: "quest" as const
+      }))
+  ].filter((block) => {
+    const start = new Date(block.start).getTime();
+    const end = new Date(block.end).getTime();
+    return start < toTime && end > fromTime;
+  }).sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+}
+
+function visibleRange(mode: "day" | "week") {
+  const from = new Date();
+  from.setHours(0, 0, 0, 0);
+  if (mode === "week") from.setDate(from.getDate() - from.getDay());
+  const to = new Date(from);
+  to.setDate(to.getDate() + (mode === "day" ? 1 : 7));
+  return { from: from.toISOString(), to: to.toISOString() };
 }

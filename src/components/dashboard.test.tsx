@@ -25,5 +25,5 @@ vi.mock("./app-shell", () => ({
 
 it("shows local quests before background reconciliation finishes", async () => {
   render(<Dashboard />);
-  expect(await screen.findByText("로컬 일정 먼저 표시", {}, { timeout: 200 })).toBeInTheDocument();
+  expect(await screen.findAllByText("로컬 일정 먼저 표시", {}, { timeout: 200 })).toHaveLength(2);
 });

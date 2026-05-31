@@ -11,6 +11,7 @@ import { QuestForm, QuestDraft } from "./quest-form";
 import { QuestList } from "./quest-list";
 import { NotificationPreferencePrompt, PushStatus } from "./notification-preference-prompt";
 import { PlusIcon } from "./icons";
+import { NowPanel } from "./now-panel";
 
 export function Dashboard() {
   const [quests, setQuests] = useState<Quest[]>([]);
@@ -95,6 +96,7 @@ export function Dashboard() {
         <div><span>남은 할 일</span><strong>{quests.filter((quest) => quest.status !== "completed" && quest.status !== "abandoned").length}</strong></div>
         <div><span>정렬 기준</span><strong className="summary-text">마감일 우선</strong></div>
       </section>
+      <NowPanel quests={quests} onAdd={() => setShowForm(true)} onComplete={(id) => void finishQuest(id)} />
       <AttentionPanel notifications={notifications} onRead={(ids) => void readNotifications(ids)} />
       {pushStatus && <NotificationPreferencePrompt status={pushStatus} onEnable={() => void enableNotifications()} onDisable={() => void disableNotifications()} />}
       {showForm && <div className="form-panel"><div><p className="eyebrow">새 할 일</p><h2>할 일 등록</h2></div><QuestForm onSubmit={addQuest} /></div>}

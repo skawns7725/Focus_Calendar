@@ -4,6 +4,10 @@ export async function listQuests(): Promise<Quest[]> {
   return request("/api/quests");
 }
 
+export async function listCalendarBlocks(from: string, to: string) {
+  return request(`/api/calendar/import?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+}
+
 export async function createQuest(input: unknown): Promise<Quest> {
   return request("/api/quests", { method: "POST", body: JSON.stringify(input) });
 }

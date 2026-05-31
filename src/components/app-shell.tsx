@@ -14,9 +14,9 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
           <span className="status-dot" />
           Google Calendar 연결 준비
         </div>
-        <AccountStatus />
       </aside>
       <main className="app-main">
+        <div className="account-slot"><AccountStatus /></div>
         <header className="page-header">
           <div><p className="eyebrow">오늘 일정</p><h1>{title}</h1><p>{subtitle}</p></div>
           {actions && <div className="header-actions">{actions}</div>}

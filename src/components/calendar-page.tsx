@@ -29,8 +29,19 @@ export function CalendarPage({ mode }: { mode: "day" | "week" }) {
   return (
     <AppShell title={mode === "day" ? "일간 캘린더" : "주간 캘린더"} subtitle="고정 일정과 할 일 배치를 한눈에 확인하세요.">
       <div className="calendar-toolbar"><span>{mode === "day" ? "오늘" : "이번 주"}</span><strong>Google Calendar 일정은 읽기 전용입니다.</strong></div>
-      {loading ? <p className="calendar-state">일정을 정리하고 있습니다.</p> : error ? <p className="calendar-state form-error">{error}</p> : <CalendarGrid blocks={blocks} />}
+      {loading ? <p className="calendar-state">일정을 정리하고 있습니다.</p> : error ? <CalendarConnectionPrompt /> : <CalendarGrid blocks={blocks} />}
     </AppShell>
+  );
+}
+
+function CalendarConnectionPrompt() {
+  return (
+    <section className="calendar-state connection-prompt">
+      <p className="eyebrow">Calendar</p>
+      <h2>Google Calendar를 연결해 일정을 불러오세요.</h2>
+      <p>연결하면 고정 일정과 자동 배치된 할 일을 한 화면에서 확인할 수 있습니다.</p>
+      <a className="primary-button" href="/api/google/connect?mode=read">Google Calendar 연결</a>
+    </section>
   );
 }
 

@@ -51,6 +51,7 @@ a { color: inherit; text-decoration: none; }
 .nav-icon { width: 17px; height: 17px; }
 .sidebar-note { display: flex; gap: 8px; align-items: center; margin-top: auto; color: var(--muted); font-size: 12px; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text); opacity: .72; }
+.account-slot { position: fixed; bottom: 24px; left: 26px; z-index: 3; }
 
 .app-main { width: min(1100px, 100%); padding: 52px 52px 96px; margin: 0 auto; }
 .page-header, .list-heading { display: flex; gap: 24px; align-items: flex-end; justify-content: space-between; }
@@ -119,6 +120,9 @@ a { color: inherit; text-decoration: none; }
 .calendar-toolbar { display: flex; justify-content: space-between; margin: 38px 0 15px; color: var(--muted); font-size: 13px; }
 .calendar-toolbar span { color: var(--text); font-weight: 700; }
 .calendar-state { padding: 44px 20px; color: var(--muted); text-align: center; border: 1px dashed var(--line-strong); border-radius: 14px; }
+.connection-prompt { display: grid; gap: 12px; justify-items: center; padding: 48px 20px; background: var(--panel); border-style: solid; }
+.connection-prompt h2, .connection-prompt p { max-width: 520px; margin: 0; }
+.connection-prompt .primary-button { margin-top: 6px; }
 .settings-card { display: grid; gap: 20px; max-width: 760px; margin-top: 36px; padding: 25px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); }
 .settings-card h2 { margin: 6px 0; letter-spacing: -.04em; }
 .settings-card p { color: var(--muted); }
@@ -129,6 +133,8 @@ a { color: inherit; text-decoration: none; }
   .app-frame { display: block; }
   .desktop-sidebar { display: none; }
   .app-main { padding: 28px 16px 92px; }
+  .account-slot { position: static; display: flex; justify-content: flex-end; min-height: 34px; margin-bottom: 18px; }
+  .account-slot .secondary-button { font-size: 12px; }
   .page-header { align-items: flex-start; }
   .page-header h1 { font-size: 34px; }
   .page-header p { max-width: 220px; font-size: 13px; }

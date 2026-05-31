@@ -34,4 +34,5 @@ it("keeps the signed-out dashboard calm when quests cannot be loaded", async () 
   render(<Dashboard />);
 
   expect(await screen.findByText("해야 할 일을 가볍게 적어보세요.")).toBeVisible();
+  expect(screen.queryByText("현재 남아 있는 할 일이 없습니다.")).not.toBeInTheDocument();
 });

@@ -20,6 +20,7 @@ export function Dashboard() {
   const [toastVisible, setToastVisible] = useState(false);
   const [notifications, setNotifications] = useState<DisplayNotification[]>([]);
   const [pushStatus, setPushStatus] = useState<PushStatus | null>(null);
+  const remainingCount = quests.filter((quest) => quest.status !== "completed" && quest.status !== "abandoned").length;
 
   async function refresh() {
     setQuests(await listQuests().catch(() => []));
@@ -93,15 +94,15 @@ export function Dashboard() {
     >
       <section className="dashboard-summary">
         <div><span>오늘 완료</span><strong>{completedCount}</strong></div>
-        <div><span>남은 할 일</span><strong>{quests.filter((quest) => quest.status !== "completed" && quest.status !== "abandoned").length}</strong></div>
+        <div><span>남은 할 일</span><strong>{remainingCount}</strong></div>
         <div><span>정렬 기준</span><strong className="summary-text">마감일 우선</strong></div>
       </section>
       <NowPanel quests={quests} onAdd={() => setShowForm(true)} onComplete={(id) => void finishQuest(id)} />
       <AttentionPanel notifications={notifications} onRead={(ids) => void readNotifications(ids)} />
       {pushStatus && <NotificationPreferencePrompt status={pushStatus} onEnable={() => void enableNotifications()} onDisable={() => void disableNotifications()} />}
       {showForm && <div className="form-panel"><div><p className="eyebrow">새 할 일</p><h2>할 일 등록</h2></div><QuestForm onSubmit={addQuest} /></div>}
-      <div className="list-heading"><div><p className="eyebrow">우선순위 목록</p><h2>지금 처리할 순서</h2></div><span>마감 → 중요도 → 이월 횟수</span></div>
-      <QuestList quests={quests} onComplete={finishQuest} onAbandon={abandon} onNearestDate={(id) => void moveNearest(id)} onEdit={(id) => void edit(id)} />
+      {remainingCount > 0 && <><div className="list-heading"><div><p className="eyebrow">우선순위 목록</p><h2>지금 처리할 순서</h2></div><span>마감 → 중요도 → 이월 횟수</span></div>
+      <QuestList quests={quests} onComplete={finishQuest} onAbandon={abandon} onNearestDate={(id) => void moveNearest(id)} onEdit={(id) => void edit(id)} /></>}
       {toastVisible && <CompletionToast completedCount={completedCount} />}
     </AppShell>
   );

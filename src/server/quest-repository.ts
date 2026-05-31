@@ -19,8 +19,10 @@ export interface QuestRepository {
 }
 
 export class PrismaQuestRepository implements QuestRepository {
+  constructor(private readonly ownerId = "local") {}
+
   async list(): Promise<Quest[]> {
-    return (await db.quest.findMany()).map(toQuest);
+    return (await db.quest.findMany({ where: { ownerId: this.ownerId } })).map(toQuest);
   }
 
   async save(input: SaveQuestInput): Promise<Quest> {
@@ -29,7 +31,8 @@ export class PrismaQuestRepository implements QuestRepository {
         ...input,
         deadline: new Date(input.deadline),
         plannedStart: input.plannedStart ? new Date(input.plannedStart) : null,
-        status: "scheduled"
+        status: "scheduled",
+        ownerId: this.ownerId
       }
     }));
   }
@@ -42,14 +45,16 @@ export class PrismaQuestRepository implements QuestRepository {
     }
 
     try {
-      return toQuest(await db.quest.update({ where: { id }, data }));
+      const result = await db.quest.updateMany({ where: { id, ownerId: this.ownerId }, data });
+      if (!result.count) return null;
+      return toQuest(await db.quest.findFirstOrThrow({ where: { id, ownerId: this.ownerId } }));
     } catch {
       return null;
     }
   }
 
   async delete(id: string): Promise<boolean> {
-    return (await db.quest.deleteMany({ where: { id } })).count > 0;
+    return (await db.quest.deleteMany({ where: { id, ownerId: this.ownerId } })).count > 0;
   }
 }
 

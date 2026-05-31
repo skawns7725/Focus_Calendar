@@ -33,8 +33,10 @@ const defaultSettings: UserSettings = {
 };
 
 export class SettingsRepository {
+  constructor(private readonly ownerId = "local") {}
+
   async get(): Promise<UserSettings> {
-    const settings = await db.settings.findUnique({ where: { id: "local" } });
+    const settings = await db.settings.findUnique({ where: { ownerId: this.ownerId } });
     return settings ? {
       ...settings,
       defaultView: settings.defaultView as UserSettings["defaultView"],
@@ -46,8 +48,8 @@ export class SettingsRepository {
 
   async update(input: UserSettings): Promise<UserSettings> {
     const settings = await db.settings.upsert({
-      where: { id: "local" },
-      create: { id: "local", ...toStoredSettings(input) },
+      where: { ownerId: this.ownerId },
+      create: { ownerId: this.ownerId, ...toStoredSettings(input) },
       update: toStoredSettings(input)
     });
     return {

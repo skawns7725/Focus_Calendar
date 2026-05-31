@@ -9,7 +9,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
     <div className="app-frame">
       <aside className="desktop-sidebar">
         <Link className="brand" href="/"><span className="brand-mark"><BrandIcon size={20} /></span><span>Focus Calendar</span></Link>
-        <AppNavigation />
+        <AppNavigation variant="desktop" />
         <div className="sidebar-note">
           <span className="status-dot" />
           Google Calendar 연결 준비
@@ -23,6 +23,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
         </header>
         {children}
       </main>
+      <AppNavigation variant="mobile" />
     </div>
   );
 }

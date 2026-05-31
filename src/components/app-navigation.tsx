@@ -15,17 +15,12 @@ function isCurrent(pathname: string, href: string) {
   return href === "/" ? pathname === href : pathname.startsWith(href);
 }
 
-export function AppNavigation() {
+export function AppNavigation({ variant }: { variant: "desktop" | "mobile" }) {
   const pathname = usePathname() ?? "/";
 
-  return (
-    <>
-      <nav aria-label="데스크톱 메뉴" className="side-nav">
-        {items.map(({ href, icon: Icon, label }) => <Link className={isCurrent(pathname, href) ? "active" : undefined} href={href} key={href}><Icon className="nav-icon" />{label}</Link>)}
-      </nav>
-      <nav aria-label="모바일 메뉴" className="mobile-nav">
-        {items.map(({ href, icon: Icon, label, mobileLabel }) => <Link aria-label={label} className={isCurrent(pathname, href) ? "active" : undefined} href={href} key={href}><Icon />{mobileLabel}</Link>)}
-      </nav>
-    </>
-  );
+  if (variant === "desktop") {
+    return <nav aria-label="데스크톱 메뉴" className="side-nav">{items.map(({ href, icon: Icon, label }) => <Link className={isCurrent(pathname, href) ? "active" : undefined} href={href} key={href}><Icon className="nav-icon" />{label}</Link>)}</nav>;
+  }
+
+  return <nav aria-label="모바일 메뉴" className="mobile-nav">{items.map(({ href, icon: Icon, label, mobileLabel }) => <Link aria-label={label} className={isCurrent(pathname, href) ? "active" : undefined} href={href} key={href}><Icon />{mobileLabel}</Link>)}</nav>;
 }

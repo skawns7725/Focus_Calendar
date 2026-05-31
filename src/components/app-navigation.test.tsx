@@ -7,7 +7,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 it("marks the current desktop and mobile navigation links as active", () => {
-  render(<AppNavigation />);
+  render(<><AppNavigation variant="desktop" /><AppNavigation variant="mobile" /></>);
 
   expect(screen.getAllByRole("link", { name: "설정" })).toHaveLength(2);
   expect(screen.getAllByRole("link", { name: "설정" }).every((link) => link.classList.contains("active"))).toBe(true);

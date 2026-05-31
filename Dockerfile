@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run db:generate && npm run build
+RUN npm run build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
@@ -18,5 +18,4 @@ COPY --from=build /app/.next/static ./.next/static
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 EXPOSE 3000
-VOLUME ["/data"]
 ENTRYPOINT ["./docker-entrypoint.sh"]

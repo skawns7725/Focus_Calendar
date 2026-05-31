@@ -5,11 +5,12 @@ Focus Calendar is a responsive schedule manager for deciding what to do next. It
 ## Local Setup
 
 1. Copy `.env.example` to `.env`.
-2. Run `npm install`.
-3. Run `npm run db:generate`.
-4. Run `npm run db:push`.
-5. Run `npm run dev`.
-6. Open `http://localhost:3000`.
+2. Create a PostgreSQL database and set its connection string as `DATABASE_URL`.
+3. Run `npm install`.
+4. Run `npm run db:generate`.
+5. Run `npm run db:push`.
+6. Run `npm run dev`.
+7. Open `http://localhost:3000`.
 
 ## Verification
 
@@ -88,10 +89,10 @@ Expired browser subscriptions are removed automatically after a push provider re
 
 ## Production Checklist
 
-- Deploy one application replica with a persistent `/data` volume.
+- Create a PostgreSQL database and configure `DATABASE_URL`.
 - Configure HTTPS, Google OAuth, `GOOGLE_TOKEN_ENCRYPTION_KEY`, VAPID keys, and `SCHEDULER_SECRET`.
 - Schedule reconciliation every 15 minutes and notification dispatch every 5 minutes.
-- Back up the SQLite database volume regularly.
+- Back up the PostgreSQL database regularly.
 
 ## Automatic Carryover
 
@@ -108,16 +109,27 @@ curl -X POST http://localhost:3000/api/schedule/reconcile \
 
 When `SCHEDULER_SECRET` is unset, local calls are allowed without the header. In production, configure a random secret and schedule this request every 15 minutes.
 
+## Vercel Hobby Deployment
+
+1. Push this repository to GitHub.
+2. Import the repository as a new project in [Vercel](https://vercel.com/new).
+3. Open the project's `Storage` tab, install [Neon](https://vercel.com/marketplace/neon), choose the free plan, and connect the resource to the project.
+4. Confirm that the Neon integration added `DATABASE_URL`.
+5. Add the Google OAuth, token-encryption, VAPID, and scheduler environment variables under `Settings > Environment Variables`.
+6. Redeploy the project.
+7. Set `GOOGLE_REDIRECT_URI` to `https://<project-domain>/api/google/callback`, add the exact URI in Google Cloud Console, and redeploy again.
+8. Create the two cron-job.org jobs shown below.
+
+Vercel uses the `vercel-build` script to apply the Prisma schema to Neon before compiling the application.
+
 ## Container Deployment
 
-Build and run one application replica with a persistent `/data` volume:
+Build and run the application with an external PostgreSQL database:
 
 ```bash
 docker build -t focus-calendar .
 docker run --rm -p 3000:3000 \
-  -v focus-calendar-data:/data \
   --env-file .env.production \
-  -e DATABASE_URL="file:/data/focus-calendar.db" \
   focus-calendar
 ```
 
@@ -135,4 +147,4 @@ curl -X POST https://example.com/api/notifications/dispatch \
   -H "Authorization: Bearer $SCHEDULER_SECRET"
 ```
 
-SQLite requires one running application replica and a persistent disk. Mobile users can install the responsive site as a home-screen shortcut through the browser menu.
+Mobile users can install the responsive site as a home-screen shortcut through the browser menu.

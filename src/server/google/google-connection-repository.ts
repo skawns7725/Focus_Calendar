@@ -1,8 +1,10 @@
 import { db } from "../db";
 
 export class GoogleConnectionRepository {
+  constructor(private readonly ownerId = "local") {}
+
   get() {
-    return db.googleConnection.findUnique({ where: { id: "local" } });
+    return db.googleConnection.findUnique({ where: { ownerId: this.ownerId } });
   }
 
   async saveTokens(input: { accessToken: string; refreshToken?: string; expiresIn: number; scope?: string }) {
@@ -14,21 +16,21 @@ export class GoogleConnectionRepository {
       scope: input.scope,
       lastSyncError: null
     };
-    return db.googleConnection.upsert({ where: { id: "local" }, create: { id: "local", ...data }, update: data });
+    return db.googleConnection.upsert({ where: { ownerId: this.ownerId }, create: { ownerId: this.ownerId, ...data }, update: data });
   }
 
   async recordSyncSuccess() {
     const data = { lastSyncedAt: new Date(), lastSyncError: null };
-    return db.googleConnection.upsert({ where: { id: "local" }, create: { id: "local", ...data }, update: data });
+    return db.googleConnection.upsert({ where: { ownerId: this.ownerId }, create: { ownerId: this.ownerId, ...data }, update: data });
   }
 
   async recordSyncError(error: string) {
     const data = { lastSyncError: error };
-    return db.googleConnection.upsert({ where: { id: "local" }, create: { id: "local", ...data }, update: data });
+    return db.googleConnection.upsert({ where: { ownerId: this.ownerId }, create: { ownerId: this.ownerId, ...data }, update: data });
   }
 
   setDedicatedCalendar(id: string) {
-    return db.googleConnection.upsert({ where: { id: "local" }, create: { id: "local", dedicatedCalendarId: id }, update: { dedicatedCalendarId: id } });
+    return db.googleConnection.upsert({ where: { ownerId: this.ownerId }, create: { ownerId: this.ownerId, dedicatedCalendarId: id }, update: { dedicatedCalendarId: id } });
   }
 
   async status() {

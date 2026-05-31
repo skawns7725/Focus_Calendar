@@ -8,4 +8,4 @@ dev.db
 dev.db-journal
 outputs/
 work/
-
+.vercel/

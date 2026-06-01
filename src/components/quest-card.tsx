@@ -20,6 +20,7 @@ export function QuestCard({ quest, onComplete, onDelete, onNearestDate, onEdit }
           <span>마감 {formatDate(quest.deadline)}</span>
           <span>{quest.expectedMinutes}분</span>
         </div>
+        {quest.location && <p className="quest-location">장소 {quest.location}</p>}
         {quest.note && <p className="quest-note">{quest.note}</p>}
         {quest.status === "needs_attention" && <div className="overdue-actions"><button type="button" onClick={() => onNearestDate(quest.id)}>가장 가까운 날짜로 이동</button><button type="button" onClick={() => onEdit(quest.id)}>직접 수정</button></div>}
         {overdue && <div className="overdue-actions"><button type="button" onClick={() => onEdit(quest.id)}>일정 수정</button><button type="button" onClick={() => onDelete(quest.id)}>삭제</button></div>}

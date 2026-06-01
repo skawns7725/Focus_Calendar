@@ -18,6 +18,7 @@ export interface Quest {
   id: string;
   title: string;
   note: string | null;
+  location: string | null;
   kind: QuestKind;
   deadline: string;
   expectedMinutes: number;

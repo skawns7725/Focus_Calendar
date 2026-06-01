@@ -7,6 +7,7 @@ export interface GoogleCalendarSummary {
 export interface GoogleEventInput {
   summary: string;
   description?: string;
+  location?: string;
   start: { dateTime: string };
   end: { dateTime: string };
   extendedProperties: { private: { focusCalendarQuestId: string } };

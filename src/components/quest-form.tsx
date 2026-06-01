@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 export interface QuestDraft {
   title: string;
   note?: string | null;
+  location?: string | null;
   kind: "flexible" | "fixed";
   deadline: string;
   expectedMinutes: number;
@@ -23,6 +24,7 @@ export function QuestForm({ initialValue, onCancel, onSubmit }: { initialValue?:
       await onSubmit({
         title: String(data.get("title")),
         note: String(data.get("note") ?? "").trim() || null,
+        location: String(data.get("location") ?? "").trim() || null,
         kind,
         deadline: withOffset(String(data.get("deadline"))),
         expectedMinutes: Number(data.get("expectedMinutes")),
@@ -53,6 +55,7 @@ export function QuestForm({ initialValue, onCancel, onSubmit }: { initialValue?:
         <label>마감<input aria-label="마감" name="deadline" type="datetime-local" defaultValue={toLocalDateTime(initialValue?.deadline)} required /></label>
         <label>소요 시간<input aria-label="소요 시간" name="expectedMinutes" type="number" min="1" defaultValue={initialValue?.expectedMinutes ?? 30} required /></label>
       </div>
+      <label>장소<input name="location" maxLength={300} defaultValue={initialValue?.location ?? ""} placeholder="예: 서울 중앙병원" /></label>
       <label>메모<textarea name="note" rows={3} maxLength={2000} defaultValue={initialValue?.note ?? ""} placeholder="필요한 내용을 자유롭게 적어두세요." /></label>
       {error && <p className="form-error">{error}</p>}
       <div className="form-actions">

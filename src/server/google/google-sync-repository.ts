@@ -47,6 +47,7 @@ export class PrismaGoogleSyncRepository {
       id: quest.id,
       title: quest.title,
       note: quest.note,
+      location: quest.location,
       kind: quest.kind as QuestKind,
       deadline: quest.deadline.toISOString(),
       expectedMinutes: quest.expectedMinutes,

@@ -24,7 +24,7 @@ Editing uses the same form in place instead of an ISO-string browser prompt. The
 
 ### Event Notes
 
-Each task stores an optional plain-text note. Notes are included in create and edit requests, shown as a short preview on the card, and sent to a dedicated Google Calendar event description when two-way sync is enabled. Notes remain optional and must not crowd the compact list.
+Each task stores an optional plain-text note and location. They are included in create and edit requests, shown as short previews on the card, and sent to a dedicated Google Calendar event description and location when two-way sync is enabled. Both remain optional and must not crowd the compact list.
 
 ### Mobile Gestures
 
@@ -80,4 +80,3 @@ The OAuth callback redirects back to `/settings` after success. If token exchang
 - CSS is checked for horizontal containment.
 - Production build must pass.
 - A 390-pixel browser viewport verifies no horizontal overflow, card wrapping, the edit form, and the Google reconnect prompt.
-

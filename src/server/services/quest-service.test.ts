@@ -47,6 +47,30 @@ describe("createQuestService", () => {
     expect(saved).toMatchObject([{ note: "자료 링크 확인" }]);
   });
 
+  it("trims an optional calendar location", async () => {
+    const saved: unknown[] = [];
+    const service = createQuestService({
+      list: async () => [],
+      save: async (quest) => {
+        saved.push(quest);
+        return quest;
+      },
+      update: async () => null
+    });
+
+    await service.create({
+      title: "병원 예약",
+      location: "  서울 중앙병원  ",
+      kind: "fixed",
+      plannedStart: "2026-06-03T14:00:00+09:00",
+      deadline: "2026-06-03T15:00:00+09:00",
+      expectedMinutes: 60,
+      importance: 2
+    });
+
+    expect(saved).toMatchObject([{ location: "서울 중앙병원" }]);
+  });
+
   it("rejects a fixed quest without a planned start", async () => {
     const service = createQuestService({
       list: async () => [],

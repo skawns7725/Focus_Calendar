@@ -51,7 +51,7 @@ model Settings {
   timeZone                      String  @default("Asia/Seoul")
   theme                         String  @default("system")
   twoWaySync                    Boolean @default(false)
-  googleImportMode              String?
+  googleImportMode              String? @default("all")
   selectedGoogleCalendarIdsJson String  @default("[]")
   notificationPromptCompleted   Boolean @default(false)
   browserNotificationsEnabled   Boolean @default(false)

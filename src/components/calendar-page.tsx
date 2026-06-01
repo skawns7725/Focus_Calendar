@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { listCalendarBlocks, listQuests } from "@/client/api";
+import { listCalendarBlocks, listQuests, syncGoogleCalendar } from "@/client/api";
 import { Quest } from "@/domain/types";
 import { AppShell } from "./app-shell";
 import { CalendarGrid, CalendarGridBlock } from "./calendar-grid";
@@ -17,18 +17,32 @@ export function CalendarPage({ mode }: { mode: "day" | "week" }) {
   const [blocks, setBlocks] = useState<CalendarGridBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncWarning, setSyncWarning] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
     const { from, to } = visibleRange(mode);
-    Promise.all([listCalendarBlocks(from, to), listQuests()])
-      .then(([calendarBlocks, quests]: [ImportedBlock[], Quest[]]) => setBlocks(combineBlocks(calendarBlocks, quests, from, to)))
-      .catch(() => setError("일정을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."))
-      .finally(() => setLoading(false));
+    syncGoogleCalendar()
+      .catch(() => {
+        if (active) setSyncWarning("Google Calendar의 최신 일정을 가져오지 못했습니다. 저장된 일정을 표시합니다.");
+      })
+      .then(() => Promise.all([listCalendarBlocks(from, to), listQuests()]))
+      .then(([calendarBlocks, quests]: [ImportedBlock[], Quest[]]) => {
+        if (active) setBlocks(combineBlocks(calendarBlocks, quests, from, to));
+      })
+      .catch(() => {
+        if (active) setError("일정을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
   }, [mode]);
 
   return (
     <AppShell title={mode === "day" ? "일간 캘린더" : "주간 캘린더"} subtitle="고정 일정과 할 일 배치를 한눈에 확인하세요.">
       <div className="calendar-toolbar"><span>{mode === "day" ? "오늘" : "이번 주"}</span><strong>Google Calendar 일정은 읽기 전용입니다.</strong></div>
+      {syncWarning && <p className="sync-warning" role="status">{syncWarning}</p>}
       {loading ? <p className="calendar-state">일정을 정리하고 있습니다.</p> : error ? <CalendarConnectionPrompt /> : <CalendarGrid blocks={blocks} />}
     </AppShell>
   );

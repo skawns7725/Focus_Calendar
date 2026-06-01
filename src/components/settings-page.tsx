@@ -39,7 +39,7 @@ interface GoogleCalendar {
 const defaults: Settings = {
   weekdayStart: "09:00", weekdayEnd: "22:00", weekendStart: "10:00", weekendEnd: "22:00",
   defaultView: "list", timeZone: "Asia/Seoul", theme: "system", twoWaySync: false,
-  googleImportMode: null, selectedGoogleCalendarIds: [],
+  googleImportMode: "all", selectedGoogleCalendarIds: [],
   notificationPromptCompleted: false, browserNotificationsEnabled: false, reminderMinutes: 10
 };
 
@@ -47,6 +47,7 @@ export function SettingsPage() {
   const [settings, setSettings] = useState(defaults);
   const [saved, setSaved] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [google, setGoogle] = useState<GoogleStatus>({ configured: false, connected: false, dedicatedCalendarId: null });
   const [calendars, setCalendars] = useState<GoogleCalendar[]>([]);
   const [push, setPush] = useState<PushStatus | null>(null);
@@ -66,15 +67,23 @@ export function SettingsPage() {
     event.preventDefault();
     await updateSettings(settings);
     saveTheme(settings.theme);
+    if (google.connected && settings.googleImportMode) await syncNow();
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1800);
   }
 
   async function syncNow() {
     setSyncing(true);
+    setSyncResult(null);
     try {
       await syncGoogleCalendar();
       setGoogle(await getGoogleStatus());
+      setSyncResult({ kind: "success", message: "Google Calendar 일정을 동기화했습니다." });
+    } catch (error) {
+      setSyncResult({
+        kind: "error",
+        message: error instanceof Error ? error.message : "Google Calendar 일정을 동기화하지 못했습니다."
+      });
     } finally {
       setSyncing(false);
     }
@@ -167,6 +176,7 @@ export function SettingsPage() {
         {google.connected && !google.dedicatedCalendarId && <a className="secondary-button" href="/api/google/connect?mode=write">양방향 동기화 권한 요청</a>}
         {google.dedicatedCalendarId && <p className="saved-message">전용 Focus Calendar와 양방향 동기화가 준비되었습니다.</p>}
         {google.connected && <button className="secondary-button" type="button" disabled={syncing || !settings.googleImportMode} onClick={() => void syncNow()}>{syncing ? "동기화 중..." : "지금 동기화"}</button>}
+        {syncResult && <p className={syncResult.kind === "error" ? "form-error" : "saved-message"} role="status">{syncResult.message}</p>}
         {google.lastSyncedAt && <p>마지막 동기화: {new Date(google.lastSyncedAt).toLocaleString()}</p>}
         {google.lastSyncError && <p className="form-error">동기화 오류: {google.lastSyncError}</p>}
       </section>

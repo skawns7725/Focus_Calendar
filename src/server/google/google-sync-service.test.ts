@@ -41,7 +41,11 @@ class FakeGateway implements GoogleCalendarGateway {
 }
 
 class FakeRepository implements GoogleSyncRepository {
-  settings = { twoWaySync: false, googleImportMode: "selected" as const, selectedGoogleCalendarIds: ["work"] };
+  settings: { twoWaySync: boolean; googleImportMode: "all" | "selected" | null; selectedGoogleCalendarIds: string[] } = {
+    twoWaySync: false,
+    googleImportMode: "selected",
+    selectedGoogleCalendarIds: ["work"]
+  };
   cursors = new Map<string, string>();
   blocks = new Map<string, { externalId: string; calendarId: string; googleEventId: string; title: string; start: string; end: string }>();
   mappings = new Map<string, { questId: string; calendarId: string; googleEventId: string }>();
@@ -89,6 +93,17 @@ describe("Google sync service", () => {
     gateway.pages.set("work", { items: [{ id: "meeting", status: "cancelled" }], nextSyncToken: "cursor-2" });
     await service.sync();
     expect(repository.blocks.has("work:meeting")).toBe(false);
+  });
+
+  it("imports all calendars when an older account has no import preference", async () => {
+    repository.settings = { ...repository.settings, googleImportMode: null };
+    gateway.pages.set("primary", { items: [{ id: "personal", summary: "Personal", start: { dateTime: "2026-06-01T08:00:00+09:00" }, end: { dateTime: "2026-06-01T09:00:00+09:00" } }] });
+    gateway.pages.set("work", { items: [{ id: "meeting", summary: "Meeting", start: { dateTime: "2026-06-01T10:00:00+09:00" }, end: { dateTime: "2026-06-01T11:00:00+09:00" } }] });
+
+    await createGoogleSyncService(connection, repository, () => gateway).sync();
+
+    expect(repository.blocks.has("primary:personal")).toBe(true);
+    expect(repository.blocks.has("work:meeting")).toBe(true);
   });
 
   it("imports every result page and recovers from an expired cursor", async () => {

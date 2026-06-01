@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Quest } from "@/domain/types";
-import { abandonQuest, completeQuest, createQuest, getPushStatus, listQuests, listUnreadNotifications, markNotificationsRead, moveQuestToNearestDay, reconcileSchedule, subscribePush, syncGoogleCalendar, unsubscribePush, updateQuest } from "@/client/api";
+import { abandonQuest, completeQuest, createQuest, getGoogleStatus, getPushStatus, listQuests, listUnreadNotifications, markNotificationsRead, moveQuestToNearestDay, reconcileSchedule, subscribePush, syncGoogleCalendar, unsubscribePush, updateQuest } from "@/client/api";
 import { enableBrowserNotifications } from "@/client/push";
 import { AttentionPanel, DisplayNotification } from "./attention-panel";
 import { AppShell } from "./app-shell";
@@ -21,6 +21,7 @@ export function Dashboard() {
   const [notifications, setNotifications] = useState<DisplayNotification[]>([]);
   const [pushStatus, setPushStatus] = useState<PushStatus | null>(null);
   const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
+  const [syncWarning, setSyncWarning] = useState<string | null>(null);
   const remainingCount = quests.filter((quest) => quest.status !== "completed" && quest.status !== "abandoned").length;
 
   async function refresh() {
@@ -35,7 +36,12 @@ export function Dashboard() {
   async function syncAndRefresh() {
     await refresh();
     await reconcileSchedule().catch(() => undefined);
-    await syncGoogleCalendar().catch(() => undefined);
+    const google = await getGoogleStatus().catch(() => null);
+    if (google?.connected) {
+      await syncGoogleCalendar()
+        .then(() => setSyncWarning(null))
+        .catch(() => setSyncWarning("Google Calendar 일정을 가져오지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요."));
+    }
     await refresh();
     setNotifications(await listUnreadNotifications().catch(() => []));
   }
@@ -99,6 +105,7 @@ export function Dashboard() {
         <div><span>남은 할 일</span><strong>{remainingCount}</strong></div>
         <div><span>정렬 기준</span><strong className="summary-text">마감일 우선</strong></div>
       </section>
+      {syncWarning && <div className="sync-warning" role="status"><span>{syncWarning}</span><button className="secondary-button" type="button" onClick={() => void syncAndRefresh()}>다시 시도</button></div>}
       <NowPanel quests={quests} onAdd={() => setShowForm(true)} onComplete={(id) => void finishQuest(id)} />
       <AttentionPanel notifications={notifications} onRead={(ids) => void readNotifications(ids)} />
       {pushStatus && <NotificationPreferencePrompt status={pushStatus} onEnable={() => void enableNotifications()} onDisable={() => void disableNotifications()} />}

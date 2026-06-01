@@ -2,9 +2,10 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { quest } from "@/test/factories";
 import { CalendarPage } from "./calendar-page";
-import { listCalendarBlocks } from "@/client/api";
+import { listCalendarBlocks, syncGoogleCalendar } from "@/client/api";
 
 vi.mock("@/client/api", () => ({
+  syncGoogleCalendar: vi.fn(async () => undefined),
   listCalendarBlocks: vi.fn(async () => {
     const start = new Date();
     start.setHours(10, 0, 0, 0);
@@ -32,6 +33,7 @@ vi.mock("./app-shell", () => ({
 }));
 
 beforeEach(() => {
+  vi.mocked(syncGoogleCalendar).mockResolvedValue(undefined);
   vi.mocked(listCalendarBlocks).mockResolvedValue([{
     id: "calendar-1",
     title: "실제 Google 일정",
@@ -56,6 +58,14 @@ it("offers Google connection when calendar loading requires sign-in", async () =
 
   expect(await screen.findByText("Google Calendar를 연결해 일정을 불러오세요.")).toBeVisible();
   expect(screen.getByRole("link", { name: "Google Calendar 연결" })).toHaveAttribute("href", "/api/google/connect?mode=read");
+});
+
+it("keeps saved blocks visible and explains when the latest Google sync fails", async () => {
+  vi.mocked(syncGoogleCalendar).mockRejectedValue(new Error("Calendar unavailable"));
+  render(<CalendarPage mode="day" />);
+
+  expect(await screen.findByText("Google Calendar의 최신 일정을 가져오지 못했습니다. 저장된 일정을 표시합니다.")).toBeVisible();
+  expect(await screen.findByText("실제 Google 일정")).toBeVisible();
 });
 
 function todayAt(hour: number) {

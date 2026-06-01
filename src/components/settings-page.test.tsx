@@ -1,12 +1,13 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { syncGoogleCalendar } from "@/client/api";
 import { SettingsPage } from "./settings-page";
 
 vi.mock("@/client/api", () => ({
   getSettings: vi.fn(async () => ({
     weekdayStart: "09:00", weekdayEnd: "22:00", weekendStart: "10:00", weekendEnd: "22:00",
     defaultView: "list", timeZone: "Asia/Seoul", theme: "light", twoWaySync: false,
-    googleImportMode: null, selectedGoogleCalendarIds: [],
+    googleImportMode: "all", selectedGoogleCalendarIds: [],
     notificationPromptCompleted: true, browserNotificationsEnabled: false, reminderMinutes: 10
   })),
   updateSettings: vi.fn(),
@@ -42,6 +43,16 @@ describe("settings page", () => {
     render(<SettingsPage />);
     fireEvent.change(await screen.findByLabelText("테마"), { target: { value: "dark" } });
     expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
+  it("syncs connected calendars immediately after settings are saved", async () => {
+    render(<SettingsPage />);
+    await screen.findByRole("button", { name: "지금 동기화" });
+
+    fireEvent.submit(document.querySelector("form")!);
+
+    await waitFor(() => expect(syncGoogleCalendar).toHaveBeenCalled());
+    expect(await screen.findByText("Google Calendar 일정을 동기화했습니다.")).toBeVisible();
   });
 
   it("shows a reconnect message after Google callback failure", async () => {

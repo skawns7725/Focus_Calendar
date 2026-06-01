@@ -29,6 +29,9 @@ export async function GET(request: Request) {
     if (mode === "write") {
       await googleSyncService.enableTwoWaySync();
     }
+    await googleSyncService.sync().catch((error) => {
+      console.error("Initial Google Calendar sync failed", error);
+    });
     const response = NextResponse.redirect(new URL("/settings?google=connected", request.url));
     response.headers.set("set-cookie", serializeSessionCookie(await new SessionRepository().create(user.id)));
     return response;

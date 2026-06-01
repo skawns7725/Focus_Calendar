@@ -70,9 +70,9 @@ export function createGoogleSyncService(
         }
 
         const calendars = await gateway.listCalendars();
-        const selected = settings.googleImportMode === "all"
-          ? calendars
-          : calendars.filter((calendar) => settings.selectedGoogleCalendarIds.includes(calendar.id));
+        const selected = settings.googleImportMode === "selected"
+          ? calendars.filter((calendar) => settings.selectedGoogleCalendarIds.includes(calendar.id))
+          : calendars;
         for (const calendar of selected.filter((calendar) => calendar.id !== dedicatedCalendarId)) {
           await importCalendar(repository, gateway, calendar.id);
         }

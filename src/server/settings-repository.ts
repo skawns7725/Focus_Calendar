@@ -25,7 +25,7 @@ const defaultSettings: UserSettings = {
   timeZone: "Asia/Seoul",
   theme: "system",
   twoWaySync: false,
-  googleImportMode: null,
+  googleImportMode: "all",
   selectedGoogleCalendarIds: [],
   notificationPromptCompleted: false,
   browserNotificationsEnabled: false,
@@ -41,7 +41,7 @@ export class SettingsRepository {
       ...settings,
       defaultView: settings.defaultView as UserSettings["defaultView"],
       theme: settings.theme as UserSettings["theme"],
-      googleImportMode: settings.googleImportMode as UserSettings["googleImportMode"],
+      googleImportMode: (settings.googleImportMode as UserSettings["googleImportMode"]) ?? "all",
       selectedGoogleCalendarIds: JSON.parse(settings.selectedGoogleCalendarIdsJson) as string[]
     } : defaultSettings;
   }
@@ -56,7 +56,7 @@ export class SettingsRepository {
       ...settings,
       defaultView: settings.defaultView as UserSettings["defaultView"],
       theme: settings.theme as UserSettings["theme"],
-      googleImportMode: settings.googleImportMode as UserSettings["googleImportMode"],
+      googleImportMode: (settings.googleImportMode as UserSettings["googleImportMode"]) ?? "all",
       selectedGoogleCalendarIds: JSON.parse(settings.selectedGoogleCalendarIdsJson) as string[]
     };
   }

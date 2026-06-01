@@ -1,4 +1,4 @@
-import { Quest, QuestKind, QuestStatus } from "@/domain/types";
+import { Quest, QuestKind, QuestStatus, RecurrenceRule } from "@/domain/types";
 import { db } from "../db";
 import { SettingsRepository } from "../settings-repository";
 
@@ -48,6 +48,7 @@ export class PrismaGoogleSyncRepository {
       title: quest.title,
       note: quest.note,
       location: quest.location,
+      recurrenceRule: quest.recurrenceJson ? JSON.parse(quest.recurrenceJson) as RecurrenceRule : null,
       kind: quest.kind as QuestKind,
       deadline: quest.deadline.toISOString(),
       expectedMinutes: quest.expectedMinutes,
@@ -72,10 +73,12 @@ export class PrismaGoogleSyncRepository {
   }
 
   updateQuest(id: string, changes: Partial<Quest>) {
+    const { recurrenceRule, ...fields } = changes;
     return db.quest.updateMany({
       where: { id, ownerId: this.ownerId },
       data: {
-        ...changes,
+        ...fields,
+        recurrenceJson: recurrenceRule === undefined ? undefined : recurrenceRule ? JSON.stringify(recurrenceRule) : null,
         deadline: changes.deadline ? new Date(changes.deadline) : undefined,
         plannedStart: changes.plannedStart ? new Date(changes.plannedStart) : changes.plannedStart
       }

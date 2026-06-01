@@ -6,6 +6,7 @@ export function quest(overrides: Partial<Quest> = {}): Quest {
     title: "Sample quest",
     note: null,
     location: null,
+    recurrenceRule: null,
     kind: "flexible",
     deadline: "2026-06-02T18:00:00+09:00",
     expectedMinutes: 60,

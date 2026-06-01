@@ -15,6 +15,8 @@ vi.mock("@/client/api", () => ({
     configured: true, connected: true, dedicatedCalendarId: null, lastSyncedAt: null, lastSyncError: null
   })),
   listGoogleCalendars: vi.fn(async () => [{ id: "primary", summary: "기본 캘린더" }, { id: "work", summary: "업무" }]),
+  listUnreadNotifications: vi.fn(async () => []),
+  markNotificationsRead: vi.fn(async () => undefined),
   syncGoogleCalendar: vi.fn(),
   getPushStatus: vi.fn(async () => ({ configured: true, publicKey: "AQAB", notificationPromptCompleted: true, browserNotificationsEnabled: false, reminderMinutes: 10 })),
   subscribePush: vi.fn(),

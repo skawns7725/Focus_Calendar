@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { getGoogleStatus, listQuests, reconcileSchedule, syncGoogleCalendar } from "@/client/api";
 import { quest } from "@/test/factories";
@@ -31,7 +31,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 vi.mock("./app-shell", () => ({
-  AppShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main>
+  AppShell: ({ actions, children }: { actions?: React.ReactNode; children: React.ReactNode }) => <main>{actions}{children}</main>
 }));
 
 it("shows local quests before background reconciliation finishes", async () => {
@@ -56,4 +56,10 @@ it("shows a retry action when a connected Google Calendar sync fails", async () 
 
   expect(await screen.findByText("Google Calendar 일정을 가져오지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.")).toBeVisible();
   expect(screen.getByRole("button", { name: "다시 시도" })).toBeVisible();
+});
+
+it("opens task creation in a dialog", async () => {
+  render(<Dashboard />);
+  fireEvent.click(screen.getByRole("button", { name: "할 일 추가" }));
+  expect(screen.getByRole("dialog", { name: "할 일 추가" })).toBeVisible();
 });

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { quest } from "@/test/factories";
 import { CalendarPage } from "./calendar-page";
@@ -6,6 +6,8 @@ import { listCalendarBlocks, syncGoogleCalendar } from "@/client/api";
 
 vi.mock("@/client/api", () => ({
   syncGoogleCalendar: vi.fn(async () => undefined),
+  createQuest: vi.fn(async () => undefined),
+  updateQuest: vi.fn(async () => undefined),
   listCalendarBlocks: vi.fn(async () => {
     const start = new Date();
     start.setHours(10, 0, 0, 0);
@@ -29,7 +31,7 @@ vi.mock("@/client/api", () => ({
 }));
 
 vi.mock("./app-shell", () => ({
-  AppShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main>
+  AppShell: ({ actions, children }: { actions?: React.ReactNode; children: React.ReactNode }) => <main>{actions}{children}</main>
 }));
 
 beforeEach(() => {
@@ -66,6 +68,12 @@ it("keeps saved blocks visible and explains when the latest Google sync fails", 
 
   expect(await screen.findByText("Google Calendar의 최신 일정을 가져오지 못했습니다. 저장된 일정을 표시합니다.")).toBeVisible();
   expect(await screen.findByText("실제 Google 일정")).toBeVisible();
+});
+
+it("opens the shared task dialog from the calendar", async () => {
+  render(<CalendarPage mode="day" />);
+  fireEvent.click(await screen.findByRole("button", { name: "할 일 추가" }));
+  expect(screen.getByRole("dialog", { name: "할 일 추가" })).toBeVisible();
 });
 
 function todayAt(hour: number) {

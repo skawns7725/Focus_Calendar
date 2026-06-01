@@ -54,3 +54,17 @@ it("uses the same form for editing an existing event", () => {
   expect(screen.getByRole("button", { name: "변경사항 저장" })).toBeVisible();
   expect(screen.getByRole("button", { name: "취소" })).toBeVisible();
 });
+
+it("submits a familiar repeat selection", () => {
+  const onSubmit = vi.fn();
+  render(<QuestForm onSubmit={onSubmit} />);
+
+  fireEvent.change(screen.getByLabelText("일정 제목"), { target: { value: "평일 계획" } });
+  fireEvent.change(screen.getByLabelText("마감"), { target: { value: "2026-06-03T15:00" } });
+  fireEvent.change(screen.getByLabelText("반복"), { target: { value: "weekdays" } });
+  fireEvent.click(screen.getByRole("button", { name: "일정 추가" }));
+
+  expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+    recurrenceRule: { frequency: "weekdays" }
+  }));
+});

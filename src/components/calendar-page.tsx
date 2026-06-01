@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { listCalendarBlocks, listQuests, syncGoogleCalendar } from "@/client/api";
+import { createQuest, listCalendarBlocks, listQuests, syncGoogleCalendar, updateQuest } from "@/client/api";
 import { Quest } from "@/domain/types";
 import { AppShell } from "./app-shell";
 import { CalendarGrid, CalendarGridBlock } from "./calendar-grid";
+import { PlusIcon } from "./icons";
+import { QuestDraft } from "./quest-form";
+import { TaskModal } from "./task-modal";
 
 interface ImportedBlock {
   id: string;
@@ -18,6 +21,10 @@ export function CalendarPage({ mode }: { mode: "day" | "week" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [syncWarning, setSyncWarning] = useState<string | null>(null);
+  const [quests, setQuests] = useState<Quest[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -27,8 +34,11 @@ export function CalendarPage({ mode }: { mode: "day" | "week" }) {
         if (active) setSyncWarning("Google Calendar의 최신 일정을 가져오지 못했습니다. 저장된 일정을 표시합니다.");
       })
       .then(() => Promise.all([listCalendarBlocks(from, to), listQuests()]))
-      .then(([calendarBlocks, quests]: [ImportedBlock[], Quest[]]) => {
-        if (active) setBlocks(combineBlocks(calendarBlocks, quests, from, to));
+      .then(([calendarBlocks, loadedQuests]: [ImportedBlock[], Quest[]]) => {
+        if (active) {
+          setQuests(loadedQuests);
+          setBlocks(combineBlocks(calendarBlocks, loadedQuests, from, to));
+        }
       })
       .catch(() => {
         if (active) setError("일정을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
@@ -37,13 +47,27 @@ export function CalendarPage({ mode }: { mode: "day" | "week" }) {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, [mode]);
+  }, [mode, refreshVersion]);
+
+  async function saveNewQuest(input: QuestDraft) {
+    await createQuest(input);
+    setShowForm(false);
+    setRefreshVersion((version) => version + 1);
+  }
+
+  async function saveEditedQuest(input: QuestDraft) {
+    if (!editingQuest) return;
+    await updateQuest(editingQuest.id, input);
+    setEditingQuest(null);
+    setRefreshVersion((version) => version + 1);
+  }
 
   return (
-    <AppShell title={mode === "day" ? "일간 캘린더" : "주간 캘린더"} subtitle="고정 일정과 할 일 배치를 한눈에 확인하세요.">
+    <AppShell title={mode === "day" ? "일간 캘린더" : "주간 캘린더"} subtitle="고정 일정과 할 일 배치를 한눈에 확인하세요." actions={<button className="primary-button" type="button" onClick={() => setShowForm(true)}><PlusIcon size={16} />할 일 추가</button>}>
       <div className="calendar-toolbar"><span>{mode === "day" ? "오늘" : "이번 주"}</span><strong>Google Calendar 일정은 읽기 전용입니다.</strong></div>
       {syncWarning && !error && <p className="sync-warning" role="status">{syncWarning}</p>}
-      {loading ? <p className="calendar-state">일정을 정리하고 있습니다.</p> : error ? <CalendarConnectionPrompt /> : <CalendarGrid blocks={blocks} />}
+      {loading ? <p className="calendar-state">일정을 정리하고 있습니다.</p> : error ? <CalendarConnectionPrompt /> : <CalendarGrid blocks={blocks} onSelectTask={(id) => setEditingQuest(quests.find((quest) => quest.id === id) ?? null)} />}
+      {(showForm || editingQuest) && <TaskModal key={editingQuest?.id ?? "new"} initialValue={editingQuest ?? undefined} onClose={() => editingQuest ? setEditingQuest(null) : setShowForm(false)} onSubmit={editingQuest ? saveEditedQuest : saveNewQuest} />}
     </AppShell>
   );
 }

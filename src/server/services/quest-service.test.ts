@@ -86,4 +86,27 @@ describe("createQuestService", () => {
       importance: 2
     })).rejects.toThrow("Fixed quests require a planned start");
   });
+
+  it("persists an optional repeat rule", async () => {
+    const saved: unknown[] = [];
+    const service = createQuestService({
+      list: async () => [],
+      save: async (quest) => {
+        saved.push(quest);
+        return quest;
+      },
+      update: async () => null
+    });
+
+    await service.create({
+      title: "Plan the day",
+      kind: "flexible",
+      deadline: "2026-06-02T18:00:00+09:00",
+      expectedMinutes: 20,
+      importance: 2,
+      recurrenceRule: { frequency: "weekdays" }
+    });
+
+    expect(saved).toMatchObject([{ recurrenceRule: { frequency: "weekdays" } }]);
+  });
 });

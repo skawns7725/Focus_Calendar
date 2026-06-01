@@ -19,6 +19,7 @@ export interface Quest {
   title: string;
   note: string | null;
   location: string | null;
+  recurrenceRule: RecurrenceRule | null;
   kind: QuestKind;
   deadline: string;
   expectedMinutes: number;

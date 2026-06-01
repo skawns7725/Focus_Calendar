@@ -13,6 +13,7 @@ export function QuestCard({ quest, onComplete, onDelete, onNearestDate, onEdit }
         <div className="quest-topline">
           <span className={`quest-chip ${overdue ? "danger" : ""}`}>{overdue ? "마감 지남" : quest.kind === "fixed" ? "시작 시간 지정" : "자동 배치"}</span>
           {quest.carryoverCount > 0 && <span className="quest-chip muted">다음 날로 이동 {quest.carryoverCount}회</span>}
+          {quest.recurrenceRule && <span className="quest-chip muted">{repeatLabel(quest.recurrenceRule.frequency)}</span>}
         </div>
         <h2>{quest.title}</h2>
         <div className="quest-meta">
@@ -30,6 +31,10 @@ export function QuestCard({ quest, onComplete, onDelete, onNearestDate, onEdit }
     </article>
     </SwipeActions>
   );
+}
+
+function repeatLabel(frequency: "daily" | "weekdays" | "selected_weekdays" | "weekly") {
+  return frequency === "daily" ? "매일 반복" : frequency === "weekdays" ? "평일 반복" : frequency === "weekly" ? "매주 반복" : "선택 요일 반복";
 }
 
 function formatDate(value: string | null): string {

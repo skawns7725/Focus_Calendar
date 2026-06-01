@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 import { AccountStatus } from "./account-status";
 import { AppNavigation } from "./app-navigation";
 import { BrandIcon } from "./icons";
+import { NotificationCenter } from "./notification-center";
 
 export function AppShell({ children, title, subtitle, actions }: { children: ReactNode; title: string; subtitle: string; actions?: ReactNode }) {
   return (
@@ -16,7 +17,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
         </div>
       </aside>
       <main className="app-main">
-        <div className="account-slot"><AccountStatus /></div>
+        <div className="account-slot"><NotificationCenter /><AccountStatus /></div>
         <header className="page-header">
           <div><p className="eyebrow">오늘 일정</p><h1>{title}</h1><p>{subtitle}</p></div>
           {actions && <div className="header-actions">{actions}</div>}

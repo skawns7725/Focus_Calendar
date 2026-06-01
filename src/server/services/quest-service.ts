@@ -6,6 +6,7 @@ const questFields = z.object({
   title: z.string().trim().min(1),
   note: z.string().trim().max(2000).nullable().optional(),
   location: z.string().trim().max(300).nullable().optional(),
+  recurrenceRule: z.object({ frequency: z.enum(["daily", "weekdays", "weekly"]) }).nullable().optional(),
   kind: z.enum(["flexible", "fixed"]),
   deadline: z.string().datetime({ offset: true }),
   expectedMinutes: z.number().int().positive(),

@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { RecurrenceRule } from "@/domain/types";
 
 export interface QuestDraft {
   title: string;
   note?: string | null;
   location?: string | null;
+  recurrenceRule?: RecurrenceRule | null;
   kind: "flexible" | "fixed";
   deadline: string;
   expectedMinutes: number;
@@ -25,6 +27,7 @@ export function QuestForm({ initialValue, onCancel, onSubmit }: { initialValue?:
         title: String(data.get("title")),
         note: String(data.get("note") ?? "").trim() || null,
         location: String(data.get("location") ?? "").trim() || null,
+        recurrenceRule: toRecurrenceRule(String(data.get("recurrence") ?? "")),
         kind,
         deadline: withOffset(String(data.get("deadline"))),
         expectedMinutes: Number(data.get("expectedMinutes")),
@@ -50,6 +53,9 @@ export function QuestForm({ initialValue, onCancel, onSubmit }: { initialValue?:
         </select></label>
         <label>중요도<select name="importance" defaultValue={initialValue?.importance ?? "2"}><option value="1">보통</option><option value="2">중요</option><option value="3">매우 중요</option></select></label>
       </div>
+      <label>반복<select aria-label="반복" name="recurrence" defaultValue={initialValue?.recurrenceRule?.frequency ?? ""}>
+        <option value="">반복 없음</option><option value="daily">매일</option><option value="weekdays">평일</option><option value="weekly">매주</option>
+      </select></label>
       {kind === "fixed" && <label>시작<input aria-label="시작" name="plannedStart" type="datetime-local" defaultValue={toLocalDateTime(initialValue?.plannedStart)} required /></label>}
       <div className="form-row">
         <label>마감<input aria-label="마감" name="deadline" type="datetime-local" defaultValue={toLocalDateTime(initialValue?.deadline)} required /></label>
@@ -64,6 +70,10 @@ export function QuestForm({ initialValue, onCancel, onSubmit }: { initialValue?:
       </div>
     </form>
   );
+}
+
+function toRecurrenceRule(value: string): RecurrenceRule | null {
+  return value === "daily" || value === "weekdays" || value === "weekly" ? { frequency: value } : null;
 }
 
 function withOffset(value: string): string {

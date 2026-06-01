@@ -1,11 +1,12 @@
 import { Prisma, Quest as StoredQuest } from "@prisma/client";
-import { Quest, QuestKind, QuestStatus } from "@/domain/types";
+import { Quest, QuestKind, QuestStatus, RecurrenceRule } from "@/domain/types";
 import { db } from "./db";
 
 export interface SaveQuestInput {
   title: string;
   note?: string | null;
   location?: string | null;
+  recurrenceRule?: RecurrenceRule | null;
   kind: QuestKind;
   deadline: string;
   expectedMinutes: number;
@@ -28,11 +29,13 @@ export class PrismaQuestRepository implements QuestRepository {
   }
 
   async save(input: SaveQuestInput): Promise<Quest> {
+    const { recurrenceRule, ...fields } = input;
     return toQuest(await db.quest.create({
       data: {
-        ...input,
+        ...fields,
         deadline: new Date(input.deadline),
         plannedStart: input.plannedStart ? new Date(input.plannedStart) : null,
+        recurrenceJson: recurrenceRule ? JSON.stringify(recurrenceRule) : null,
         status: "scheduled",
         ownerId: this.ownerId
       }
@@ -40,7 +43,9 @@ export class PrismaQuestRepository implements QuestRepository {
   }
 
   async update(id: string, changes: Partial<Quest>): Promise<Quest | null> {
-    const data: Prisma.QuestUpdateInput = { ...changes };
+    const { recurrenceRule, ...fields } = changes;
+    const data: Prisma.QuestUpdateInput = { ...fields };
+    if (recurrenceRule !== undefined) data.recurrenceJson = recurrenceRule ? JSON.stringify(recurrenceRule) : null;
     if (changes.deadline) data.deadline = new Date(changes.deadline);
     if (changes.plannedStart !== undefined) {
       data.plannedStart = changes.plannedStart ? new Date(changes.plannedStart) : null;
@@ -66,6 +71,7 @@ function toQuest(stored: StoredQuest): Quest {
     title: stored.title,
     note: stored.note,
     location: stored.location,
+    recurrenceRule: stored.recurrenceJson ? JSON.parse(stored.recurrenceJson) as RecurrenceRule : null,
     kind: stored.kind as QuestKind,
     deadline: stored.deadline.toISOString(),
     expectedMinutes: stored.expectedMinutes,

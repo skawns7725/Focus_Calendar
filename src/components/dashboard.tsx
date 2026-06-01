@@ -7,11 +7,12 @@ import { enableBrowserNotifications } from "@/client/push";
 import { AttentionPanel, DisplayNotification } from "./attention-panel";
 import { AppShell } from "./app-shell";
 import { CompletionToast } from "./completion-toast";
-import { QuestForm, QuestDraft } from "./quest-form";
+import { QuestDraft } from "./quest-form";
 import { QuestList } from "./quest-list";
 import { NotificationPreferencePrompt, PushStatus } from "./notification-preference-prompt";
 import { PlusIcon } from "./icons";
 import { NowPanel } from "./now-panel";
+import { TaskModal } from "./task-modal";
 
 export function Dashboard() {
   const [quests, setQuests] = useState<Quest[]>([]);
@@ -109,7 +110,7 @@ export function Dashboard() {
       <NowPanel quests={quests} onAdd={() => setShowForm(true)} onComplete={(id) => void finishQuest(id)} />
       <AttentionPanel notifications={notifications} onRead={(ids) => void readNotifications(ids)} />
       {pushStatus && <NotificationPreferencePrompt status={pushStatus} onEnable={() => void enableNotifications()} onDisable={() => void disableNotifications()} />}
-      {(showForm || editingQuest) && <div className="form-panel"><div><p className="eyebrow">{editingQuest ? "일정 편집" : "새 일정"}</p><h2>{editingQuest ? "일정 수정" : "새 일정"}</h2></div><QuestForm key={editingQuest?.id ?? "new"} initialValue={editingQuest ?? undefined} onCancel={() => editingQuest ? setEditingQuest(null) : setShowForm(false)} onSubmit={editingQuest ? editQuest : addQuest} /></div>}
+      {(showForm || editingQuest) && <TaskModal key={editingQuest?.id ?? "new"} initialValue={editingQuest ?? undefined} onClose={() => editingQuest ? setEditingQuest(null) : setShowForm(false)} onSubmit={editingQuest ? editQuest : addQuest} />}
       {remainingCount > 0 && <><div className="list-heading"><div><p className="eyebrow">우선순위 목록</p><h2>지금 처리할 순서</h2></div><span>마감 → 중요도 → 이월 횟수</span></div>
       <QuestList quests={quests} onComplete={finishQuest} onDelete={abandon} onNearestDate={(id) => void moveNearest(id)} onEdit={(id) => setEditingQuest(quests.find((quest) => quest.id === id) ?? null)} /></>}
       {toastVisible && <CompletionToast completedCount={completedCount} />}

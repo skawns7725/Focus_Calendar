@@ -17,6 +17,7 @@ export type RecurrenceRule =
 export interface Quest {
   id: string;
   title: string;
+  note: string | null;
   kind: QuestKind;
   deadline: string;
   expectedMinutes: number;

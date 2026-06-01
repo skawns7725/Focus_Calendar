@@ -22,7 +22,10 @@ vi.mock("@/client/api", () => ({
 }));
 
 describe("settings page", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.history.replaceState({}, "", "/settings");
+  });
   afterEach(cleanup);
 
   it("shows initial calendar selection and manual sync controls", async () => {
@@ -39,5 +42,11 @@ describe("settings page", () => {
     render(<SettingsPage />);
     fireEvent.change(await screen.findByLabelText("테마"), { target: { value: "dark" } });
     expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
+  it("shows a reconnect message after Google callback failure", async () => {
+    window.history.replaceState({}, "", "/settings?google=error");
+    render(<SettingsPage />);
+    expect(await screen.findByText("Google Calendar 연결을 완료하지 못했습니다. 다시 연결해 주세요.")).toBeVisible();
   });
 });

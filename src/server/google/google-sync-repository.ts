@@ -46,6 +46,7 @@ export class PrismaGoogleSyncRepository {
     return (await db.quest.findMany({ where: { ownerId: this.ownerId } })).map((quest) => ({
       id: quest.id,
       title: quest.title,
+      note: quest.note,
       kind: quest.kind as QuestKind,
       deadline: quest.deadline.toISOString(),
       expectedMinutes: quest.expectedMinutes,

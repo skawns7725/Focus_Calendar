@@ -11,24 +11,29 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   if (!code || !state) return NextResponse.json({ error: "Missing Google OAuth callback data" }, { status: 400 });
-  const { mode, ownerId } = verifyGoogleOAuthState(state, getGoogleOAuthStateSecret());
-  const token = await exchangeGoogleCode(code);
-  const profile = await fetchGoogleProfile(token.access_token);
-  const user = await new UserRepository().upsertGoogleProfile(profile);
-  if (mode === "write" && ownerId !== user.id) {
-    return NextResponse.json({ error: "Google account does not match signed-in account" }, { status: 403 });
+  try {
+    const { mode, ownerId } = verifyGoogleOAuthState(state, getGoogleOAuthStateSecret());
+    const token = await exchangeGoogleCode(code);
+    const profile = await fetchGoogleProfile(token.access_token);
+    const user = await new UserRepository().upsertGoogleProfile(profile);
+    if (mode === "write" && ownerId !== user.id) {
+      return NextResponse.json({ error: "Google account does not match signed-in account" }, { status: 403 });
+    }
+    const { googleConnectionRepository, googleSyncService } = createGoogleServices(user.id);
+    await googleConnectionRepository.saveTokens({
+      accessToken: token.access_token,
+      refreshToken: token.refresh_token,
+      expiresIn: token.expires_in,
+      scope: token.scope
+    });
+    if (mode === "write") {
+      await googleSyncService.enableTwoWaySync();
+    }
+    const response = NextResponse.redirect(new URL("/settings?google=connected", request.url));
+    response.headers.set("set-cookie", serializeSessionCookie(await new SessionRepository().create(user.id)));
+    return response;
+  } catch (error) {
+    console.error("Google OAuth callback failed", error);
+    return NextResponse.redirect(new URL("/settings?google=error", request.url));
   }
-  const { googleConnectionRepository, googleSyncService } = createGoogleServices(user.id);
-  await googleConnectionRepository.saveTokens({
-    accessToken: token.access_token,
-    refreshToken: token.refresh_token,
-    expiresIn: token.expires_in,
-    scope: token.scope
-  });
-  if (mode === "write") {
-    await googleSyncService.enableTwoWaySync();
-  }
-  const response = NextResponse.redirect(new URL("/settings?google=connected", request.url));
-  response.headers.set("set-cookie", serializeSessionCookie(await new SessionRepository().create(user.id)));
-  return response;
 }

@@ -10,6 +10,7 @@ datasource db {
 model Quest {
   id              String   @id @default(cuid())
   title           String
+  note            String?
   kind            String
   deadline        DateTime
   expectedMinutes Int

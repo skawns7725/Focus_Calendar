@@ -6,6 +6,7 @@ import { GoogleSyncRepository, SyncConnectionRepository, createGoogleSyncService
 const scheduledQuest: Quest = {
   id: "quest-1",
   title: "보고서",
+  note: "검토할 자료 링크",
   kind: "fixed",
   deadline: "2026-06-02T18:00:00+09:00",
   expectedMinutes: 60,
@@ -115,6 +116,7 @@ describe("Google sync service", () => {
 
     await service.sync();
     expect(gateway.created).toHaveLength(1);
+    expect(gateway.created[0]?.input.description).toBe("검토할 자료 링크");
     expect(repository.mappings.get("quest-1")?.googleEventId).toBe("google-quest-1");
 
     gateway.pages.set("focus", { items: [{ id: "google-quest-1", status: "cancelled" }], nextSyncToken: "focus-2" });

@@ -4,6 +4,7 @@ import { db } from "./db";
 
 export interface SaveQuestInput {
   title: string;
+  note?: string | null;
   kind: QuestKind;
   deadline: string;
   expectedMinutes: number;
@@ -62,6 +63,7 @@ function toQuest(stored: StoredQuest): Quest {
   return {
     id: stored.id,
     title: stored.title,
+    note: stored.note,
     kind: stored.kind as QuestKind,
     deadline: stored.deadline.toISOString(),
     expectedMinutes: stored.expectedMinutes,

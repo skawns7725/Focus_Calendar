@@ -20,6 +20,7 @@ export function Dashboard() {
   const [toastVisible, setToastVisible] = useState(false);
   const [notifications, setNotifications] = useState<DisplayNotification[]>([]);
   const [pushStatus, setPushStatus] = useState<PushStatus | null>(null);
+  const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
   const remainingCount = quests.filter((quest) => quest.status !== "completed" && quest.status !== "abandoned").length;
 
   async function refresh() {
@@ -54,6 +55,7 @@ export function Dashboard() {
   }
 
   async function abandon(id: string) {
+    if (!window.confirm("이 일정을 삭제할까요?")) return;
     await abandonQuest(id);
     await syncAndRefresh();
   }
@@ -63,11 +65,11 @@ export function Dashboard() {
     await syncAndRefresh();
   }
 
-  async function edit(id: string) {
-    const plannedStart = window.prompt("새 예정 시각을 ISO 형식으로 입력하세요. 예: 2026-06-03T09:00:00+09:00");
-    if (!plannedStart) return;
-    await updateQuest(id, { plannedStart });
+  async function editQuest(input: QuestDraft) {
+    if (!editingQuest) return;
+    await updateQuest(editingQuest.id, input);
     await syncAndRefresh();
+    setEditingQuest(null);
   }
 
   async function readNotifications(ids: string[]) {
@@ -100,9 +102,9 @@ export function Dashboard() {
       <NowPanel quests={quests} onAdd={() => setShowForm(true)} onComplete={(id) => void finishQuest(id)} />
       <AttentionPanel notifications={notifications} onRead={(ids) => void readNotifications(ids)} />
       {pushStatus && <NotificationPreferencePrompt status={pushStatus} onEnable={() => void enableNotifications()} onDisable={() => void disableNotifications()} />}
-      {showForm && <div className="form-panel"><div><p className="eyebrow">새 할 일</p><h2>할 일 등록</h2></div><QuestForm onSubmit={addQuest} /></div>}
+      {(showForm || editingQuest) && <div className="form-panel"><div><p className="eyebrow">{editingQuest ? "일정 편집" : "새 일정"}</p><h2>{editingQuest ? "일정 수정" : "새 일정"}</h2></div><QuestForm key={editingQuest?.id ?? "new"} initialValue={editingQuest ?? undefined} onCancel={() => editingQuest ? setEditingQuest(null) : setShowForm(false)} onSubmit={editingQuest ? editQuest : addQuest} /></div>}
       {remainingCount > 0 && <><div className="list-heading"><div><p className="eyebrow">우선순위 목록</p><h2>지금 처리할 순서</h2></div><span>마감 → 중요도 → 이월 횟수</span></div>
-      <QuestList quests={quests} onComplete={finishQuest} onAbandon={abandon} onNearestDate={(id) => void moveNearest(id)} onEdit={(id) => void edit(id)} /></>}
+      <QuestList quests={quests} onComplete={finishQuest} onDelete={abandon} onNearestDate={(id) => void moveNearest(id)} onEdit={(id) => setEditingQuest(quests.find((quest) => quest.id === id) ?? null)} /></>}
       {toastVisible && <CompletionToast completedCount={completedCount} />}
     </AppShell>
   );

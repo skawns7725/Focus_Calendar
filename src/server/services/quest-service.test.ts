@@ -24,6 +24,29 @@ describe("createQuestService", () => {
     expect(saved).toHaveLength(1);
   });
 
+  it("trims an optional calendar note", async () => {
+    const saved: unknown[] = [];
+    const service = createQuestService({
+      list: async () => [],
+      save: async (quest) => {
+        saved.push(quest);
+        return quest;
+      },
+      update: async () => null
+    });
+
+    await service.create({
+      title: "Write report",
+      note: "  자료 링크 확인  ",
+      kind: "flexible",
+      deadline: "2026-06-02T18:00:00+09:00",
+      expectedMinutes: 60,
+      importance: 2
+    });
+
+    expect(saved).toMatchObject([{ note: "자료 링크 확인" }]);
+  });
+
   it("rejects a fixed quest without a planned start", async () => {
     const service = createQuestService({
       list: async () => [],
@@ -40,4 +63,3 @@ describe("createQuestService", () => {
     })).rejects.toThrow("Fixed quests require a planned start");
   });
 });
-

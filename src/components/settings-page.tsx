@@ -51,6 +51,7 @@ export function SettingsPage() {
   const [calendars, setCalendars] = useState<GoogleCalendar[]>([]);
   const [push, setPush] = useState<PushStatus | null>(null);
   const [pushError, setPushError] = useState<string | null>(null);
+  const googleConnectionError = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("google") === "error";
 
   useEffect(() => {
     getSettings().then(setSettings).catch(() => setSettings(defaults));
@@ -160,6 +161,7 @@ export function SettingsPage() {
 
       <section className="settings-card">
         <div><p className="eyebrow">Google Calendar</p><h2>캘린더 연결</h2><p>기본 연결은 일정 가져오기만 허용합니다. 양방향 동기화는 직접 켠 경우에만 추가 권한을 요청합니다.</p></div>
+        {googleConnectionError && <p className="form-error">Google Calendar 연결을 완료하지 못했습니다. 다시 연결해 주세요.</p>}
         {!google.configured && <p className="form-error">Google Cloud OAuth 설정이 필요합니다.</p>}
         {google.connected ? <p className="saved-message">Google Calendar가 연결되어 있습니다.</p> : <a className="secondary-button" href="/api/google/connect?mode=read">읽기 전용으로 연결</a>}
         {google.connected && !google.dedicatedCalendarId && <a className="secondary-button" href="/api/google/connect?mode=write">양방향 동기화 권한 요청</a>}

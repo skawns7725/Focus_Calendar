@@ -227,6 +227,7 @@ function toGoogleEvent(quest: Quest): GoogleEventInput {
   const start = new Date(quest.plannedStart!);
   return {
     summary: quest.title,
+    description: quest.note || undefined,
     start: { dateTime: start.toISOString() },
     end: { dateTime: new Date(start.getTime() + quest.expectedMinutes * 60000).toISOString() },
     extendedProperties: { private: { focusCalendarQuestId: quest.id } }

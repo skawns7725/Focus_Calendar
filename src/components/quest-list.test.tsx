@@ -11,12 +11,13 @@ it("shows overdue quests first with resolution actions", () => {
         quest({ id: "b", title: "Late", deadline: "2000-06-02T18:00:00+09:00", status: "overdue" })
       ]}
       onComplete={() => undefined}
-      onAbandon={() => undefined}
+      onDelete={() => undefined}
+      onNearestDate={() => undefined}
+      onEdit={() => undefined}
     />
   );
 
   expect(screen.getAllByRole("article")[0]).toHaveTextContent("Late");
-  expect(screen.getByRole("button", { name: "새 마감 설정" })).toBeVisible();
-  expect(screen.getByRole("button", { name: "포기" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "일정 수정" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "삭제" })).toBeVisible();
 });
-

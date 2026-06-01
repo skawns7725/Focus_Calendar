@@ -42,7 +42,7 @@ export function CalendarPage({ mode }: { mode: "day" | "week" }) {
   return (
     <AppShell title={mode === "day" ? "일간 캘린더" : "주간 캘린더"} subtitle="고정 일정과 할 일 배치를 한눈에 확인하세요.">
       <div className="calendar-toolbar"><span>{mode === "day" ? "오늘" : "이번 주"}</span><strong>Google Calendar 일정은 읽기 전용입니다.</strong></div>
-      {syncWarning && <p className="sync-warning" role="status">{syncWarning}</p>}
+      {syncWarning && !error && <p className="sync-warning" role="status">{syncWarning}</p>}
       {loading ? <p className="calendar-state">일정을 정리하고 있습니다.</p> : error ? <CalendarConnectionPrompt /> : <CalendarGrid blocks={blocks} />}
     </AppShell>
   );

@@ -62,6 +62,13 @@ it("offers Google connection when calendar loading requires sign-in", async () =
   expect(screen.getByRole("link", { name: "Google Calendar 연결" })).toHaveAttribute("href", "/api/google/connect?mode=read");
 });
 
+it("keeps scheduled quests visible when Google calendar loading requires sign-in", async () => {
+  vi.mocked(listCalendarBlocks).mockRejectedValue(new Error("Sign in required"));
+  render(<CalendarPage mode="day" />);
+
+  expect(await screen.findByText("실제 배치 할 일")).toBeVisible();
+});
+
 it("keeps saved blocks visible and explains when the latest Google sync fails", async () => {
   vi.mocked(syncGoogleCalendar).mockRejectedValue(new Error("Calendar unavailable"));
   render(<CalendarPage mode="day" />);

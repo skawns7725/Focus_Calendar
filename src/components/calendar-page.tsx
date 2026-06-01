@@ -20,6 +20,7 @@ export function CalendarPage({ mode }: { mode: "day" | "week" }) {
   const [blocks, setBlocks] = useState<CalendarGridBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [calendarUnavailable, setCalendarUnavailable] = useState(false);
   const [syncWarning, setSyncWarning] = useState<string | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -29,11 +30,19 @@ export function CalendarPage({ mode }: { mode: "day" | "week" }) {
   useEffect(() => {
     let active = true;
     const { from, to } = visibleRange(mode);
+    setError(null);
+    setCalendarUnavailable(false);
     syncGoogleCalendar()
       .catch(() => {
         if (active) setSyncWarning("Google Calendar의 최신 일정을 가져오지 못했습니다. 저장된 일정을 표시합니다.");
       })
-      .then(() => Promise.all([listCalendarBlocks(from, to), listQuests()]))
+      .then(() => Promise.all([
+        listCalendarBlocks(from, to).catch(() => {
+          if (active) setCalendarUnavailable(true);
+          return [];
+        }),
+        listQuests()
+      ]))
       .then(([calendarBlocks, loadedQuests]: [ImportedBlock[], Quest[]]) => {
         if (active) {
           setQuests(loadedQuests);
@@ -66,7 +75,11 @@ export function CalendarPage({ mode }: { mode: "day" | "week" }) {
     <AppShell title={mode === "day" ? "일간 캘린더" : "주간 캘린더"} subtitle="고정 일정과 할 일 배치를 한눈에 확인하세요." actions={<button className="primary-button" type="button" onClick={() => setShowForm(true)}><PlusIcon size={16} />할 일 추가</button>}>
       <div className="calendar-toolbar"><span>{mode === "day" ? "오늘" : "이번 주"}</span><strong>Google Calendar 일정은 읽기 전용입니다.</strong></div>
       {syncWarning && !error && <p className="sync-warning" role="status">{syncWarning}</p>}
-      {loading ? <p className="calendar-state">일정을 정리하고 있습니다.</p> : error ? <CalendarConnectionPrompt /> : <CalendarGrid blocks={blocks} onSelectTask={(id) => setEditingQuest(quests.find((quest) => quest.id === id) ?? null)} />}
+      {loading ? <p className="calendar-state">일정을 정리하고 있습니다.</p> : <>
+        {calendarUnavailable && <CalendarConnectionPrompt />}
+        {error && <p className="calendar-state">{error}</p>}
+        {!error && <CalendarGrid blocks={blocks} onSelectTask={(id) => setEditingQuest(quests.find((quest) => quest.id === id) ?? null)} />}
+      </>}
       {(showForm || editingQuest) && <TaskModal key={editingQuest?.id ?? "new"} initialValue={editingQuest ?? undefined} onClose={() => editingQuest ? setEditingQuest(null) : setShowForm(false)} onSubmit={editingQuest ? saveEditedQuest : saveNewQuest} />}
     </AppShell>
   );

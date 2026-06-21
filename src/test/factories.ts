@@ -10,6 +10,7 @@ export function quest(overrides: Partial<Quest> = {}): Quest {
     kind: "flexible",
     deadline: "2026-06-02T18:00:00+09:00",
     expectedMinutes: 60,
+    category: "other",
     plannedStart: "2026-06-01T09:00:00+09:00",
     importance: 1,
     carryoverCount: 0,

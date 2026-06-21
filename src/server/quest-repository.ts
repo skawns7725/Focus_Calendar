@@ -1,5 +1,5 @@
 import { Prisma, Quest as StoredQuest } from "@prisma/client";
-import { Quest, QuestKind, QuestStatus, RecurrenceRule } from "@/domain/types";
+import { Quest, QuestCategory, QuestKind, QuestStatus, RecurrenceRule } from "@/domain/types";
 import { db } from "./db";
 
 export interface SaveQuestInput {
@@ -10,6 +10,7 @@ export interface SaveQuestInput {
   kind: QuestKind;
   deadline: string;
   expectedMinutes: number;
+  category?: QuestCategory;
   plannedStart?: string | null;
   importance: 1 | 2 | 3;
 }
@@ -33,6 +34,7 @@ export class PrismaQuestRepository implements QuestRepository {
     return toQuest(await db.quest.create({
       data: {
         ...fields,
+        category: input.category ?? "other",
         deadline: new Date(input.deadline),
         plannedStart: input.plannedStart ? new Date(input.plannedStart) : null,
         recurrenceJson: recurrenceRule ? JSON.stringify(recurrenceRule) : null,
@@ -75,10 +77,15 @@ function toQuest(stored: StoredQuest): Quest {
     kind: stored.kind as QuestKind,
     deadline: stored.deadline.toISOString(),
     expectedMinutes: stored.expectedMinutes,
+    category: normalizeCategory(stored.category),
     plannedStart: stored.plannedStart?.toISOString() ?? null,
     importance: stored.importance as 1 | 2 | 3,
     carryoverCount: stored.carryoverCount,
     lastCarryoverDate: stored.lastCarryoverDate,
     status: stored.status as QuestStatus
   };
+}
+
+function normalizeCategory(value: string | null | undefined): QuestCategory {
+  return value === "work" || value === "personal" || value === "study" || value === "health" ? value : "other";
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { RecurrenceRule } from "@/domain/types";
+import { QuestCategory, RecurrenceRule } from "@/domain/types";
 
 export interface QuestDraft {
   title: string;
@@ -11,6 +11,7 @@ export interface QuestDraft {
   kind: "flexible" | "fixed";
   deadline: string;
   expectedMinutes: number;
+  category?: QuestCategory;
   importance: 1 | 2 | 3;
   plannedStart?: string | null;
 }
@@ -31,6 +32,7 @@ export function QuestForm({ initialValue, onCancel, onSubmit }: { initialValue?:
         kind,
         deadline: withOffset(String(data.get("deadline"))),
         expectedMinutes: Number(data.get("expectedMinutes")),
+        category: String(data.get("category") ?? "other") as QuestCategory,
         importance: Number(data.get("importance")) as 1 | 2 | 3,
         plannedStart: kind === "fixed" ? withOffset(String(data.get("plannedStart"))) : null
       });
@@ -55,6 +57,9 @@ export function QuestForm({ initialValue, onCancel, onSubmit }: { initialValue?:
       </div>
       <label>반복<select aria-label="반복" name="recurrence" defaultValue={initialValue?.recurrenceRule?.frequency ?? ""}>
         <option value="">반복 없음</option><option value="daily">매일</option><option value="weekdays">평일</option><option value="weekly">매주</option>
+      </select></label>
+      <label>카테고리<select name="category" defaultValue={initialValue?.category ?? "other"}>
+        <option value="work">업무</option><option value="personal">개인</option><option value="study">학습</option><option value="health">건강</option><option value="other">기타</option>
       </select></label>
       {kind === "fixed" && <label>시작<input aria-label="시작" name="plannedStart" type="datetime-local" defaultValue={toLocalDateTime(initialValue?.plannedStart)} required /></label>}
       <div className="form-row">

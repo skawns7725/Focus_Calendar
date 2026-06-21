@@ -9,8 +9,9 @@ const questFields = z.object({
   recurrenceRule: z.object({ frequency: z.enum(["daily", "weekdays", "weekly"]) }).nullable().optional(),
   kind: z.enum(["flexible", "fixed"]),
   deadline: z.string().datetime({ offset: true }),
-  expectedMinutes: z.number().int().positive(),
-  importance: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  expectedMinutes: z.number().int().positive().default(30),
+  category: z.enum(["work", "personal", "study", "health", "other"]).default("other"),
+  importance: z.union([z.literal(1), z.literal(2), z.literal(3)]).default(2),
   plannedStart: z.string().datetime({ offset: true }).nullable().optional()
 });
 

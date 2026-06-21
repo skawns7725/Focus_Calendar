@@ -39,6 +39,46 @@ const settings = {
 };
 
 describe("scheduling service", () => {
+  it("places unplanned tasks into today's free time in priority order", async () => {
+    const quests = new FakeQuestRepository(new Map([
+      ["later", quest({ id: "later", plannedStart: null, deadline: "2026-06-05T09:00:00.000Z", expectedMinutes: 40 })],
+      ["urgent", quest({ id: "urgent", plannedStart: null, deadline: "2026-06-03T09:00:00.000Z", expectedMinutes: 40 })],
+      ["completed", quest({ id: "completed", plannedStart: null, status: "completed", expectedMinutes: 20 })]
+    ]));
+    const calendar = new FakeCalendarRepository();
+    calendar.blocks = [{ start: new Date("2026-06-02T01:30:00.000Z"), end: new Date("2026-06-02T02:00:00.000Z") }];
+    const service = createSchedulingService(quests, settings, calendar, new FakeNotificationRepository());
+
+    await service.scheduleToday(new Date("2026-06-02T00:00:00.000Z"));
+
+    expect(quests.quests.get("urgent")?.plannedStart).toBe("2026-06-02T00:00:00.000Z");
+    expect(quests.quests.get("later")?.plannedStart).toBe("2026-06-02T02:10:00.000Z");
+    expect(quests.quests.get("completed")?.plannedStart).toBeNull();
+  });
+
+  it("places existing unplanned tasks during dashboard reconciliation", async () => {
+    const quests = new FakeQuestRepository(new Map([
+      ["existing", quest({ id: "existing", plannedStart: null, expectedMinutes: 30 })]
+    ]));
+    const service = createSchedulingService(quests, settings, new FakeCalendarRepository(), new FakeNotificationRepository());
+
+    const result = await service.reconcile(new Date("2026-06-02T00:00:00.000Z"));
+
+    expect(quests.quests.get("existing")?.plannedStart).toBe("2026-06-02T00:00:00.000Z");
+    expect(result.today.unplaced).toEqual([]);
+  });
+
+  it("returns today's unplaced reasons from reconciliation", async () => {
+    const quests = new FakeQuestRepository(new Map([
+      ["too-long", quest({ id: "too-long", plannedStart: null, expectedMinutes: 181 })]
+    ]));
+    const service = createSchedulingService(quests, settings, new FakeCalendarRepository(), new FakeNotificationRepository());
+
+    const result = await service.reconcile(new Date("2026-06-02T00:00:00.000Z"));
+
+    expect(result.today.unplaced).toEqual([{ questId: "too-long", reason: "insufficient_total_time" }]);
+  });
+
   it("moves only missed tasks once per local date", async () => {
     const quests = new FakeQuestRepository(new Map([
       ["missed", quest({ id: "missed", plannedStart: "2026-06-01T00:00:00.000Z" })],

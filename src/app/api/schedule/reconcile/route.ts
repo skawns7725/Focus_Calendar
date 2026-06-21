@@ -12,7 +12,10 @@ export async function POST(request: Request) {
   }
   if (authorization && process.env.SCHEDULER_SECRET) {
     const results = [];
-    for (const ownerId of await listOwnerIds()) results.push(...await reconcileOwner(ownerId));
+    for (const ownerId of await listOwnerIds()) {
+      const result = await reconcileOwner(ownerId);
+      results.push(...result.carryovers);
+    }
     return NextResponse.json(results);
   }
   const { actor } = await getRequestServices(request);

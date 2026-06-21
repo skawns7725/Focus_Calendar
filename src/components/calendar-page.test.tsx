@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { quest } from "@/test/factories";
 import { CalendarPage } from "./calendar-page";
-import { listCalendarBlocks, syncGoogleCalendar } from "@/client/api";
+import { listCalendarBlocks, listQuests, syncGoogleCalendar } from "@/client/api";
 
 vi.mock("@/client/api", () => ({
   syncGoogleCalendar: vi.fn(async () => undefined),
@@ -42,6 +42,12 @@ beforeEach(() => {
     start: todayAt(10).toISOString(),
     end: todayAt(11).toISOString()
   }]);
+  vi.mocked(listQuests).mockResolvedValue([quest({
+    id: "quest-1",
+    title: "실제 배치 할 일",
+    plannedStart: todayAt(12).toISOString(),
+    deadline: todayAt(18).toISOString()
+  })]);
 });
 
 afterEach(cleanup);
@@ -81,6 +87,26 @@ it("opens the shared task dialog from the calendar", async () => {
   render(<CalendarPage mode="day" />);
   fireEvent.click(await screen.findByRole("button", { name: "할 일 추가" }));
   expect(screen.getByRole("dialog", { name: "할 일 추가" })).toBeVisible();
+});
+
+it("explains that adding a task enables automatic placement when there are no tasks", async () => {
+  vi.mocked(listQuests).mockResolvedValue([]);
+  render(<CalendarPage mode="day" />);
+
+  expect(await screen.findByText("할 일을 추가하면 오늘의 빈 시간에 자동 배치됩니다.")).toBeVisible();
+});
+
+it("explains when active hours have no room for an unplanned task", async () => {
+  vi.mocked(listQuests).mockResolvedValue([quest({ plannedStart: null })]);
+  render(<CalendarPage mode="day" />);
+
+  expect(await screen.findByText("활동 가능 시간 안에 배치할 수 있는 시간이 부족합니다. 예상 시간을 줄이거나 설정에서 활동 가능 시간을 조정해보세요.")).toBeVisible();
+});
+
+it("confirms when today's tasks are placed on the schedule", async () => {
+  render(<CalendarPage mode="day" />);
+
+  expect(await screen.findByText("오늘의 할 일이 시간표에 배치되었습니다. 작업 사이에는 10분의 여유를 둡니다.")).toBeVisible();
 });
 
 function todayAt(hour: number) {

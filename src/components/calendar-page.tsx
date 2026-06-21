@@ -75,14 +75,22 @@ export function CalendarPage({ mode }: { mode: "day" | "week" }) {
     <AppShell title={mode === "day" ? "일간 캘린더" : "주간 캘린더"} subtitle="고정 일정과 할 일 배치를 한눈에 확인하세요." actions={<button className="primary-button" type="button" onClick={() => setShowForm(true)}><PlusIcon size={16} />할 일 추가</button>}>
       <div className="calendar-toolbar"><span>{mode === "day" ? "오늘" : "이번 주"}</span><strong>Google Calendar 일정은 읽기 전용입니다.</strong></div>
       {syncWarning && !error && <p className="sync-warning" role="status">{syncWarning}</p>}
-      {loading ? <p className="calendar-state">일정을 정리하고 있습니다.</p> : <>
+      {loading ? <p className="calendar-state">오늘의 빈 시간을 확인하고 있습니다.</p> : <>
         {calendarUnavailable && <CalendarConnectionPrompt />}
         {error && <p className="calendar-state">{error}</p>}
+        {!error && mode === "day" && <p className="calendar-schedule-status" role="status">{dayScheduleMessage(quests)}</p>}
         {!error && <CalendarGrid blocks={blocks} onSelectTask={(id) => setEditingQuest(quests.find((quest) => quest.id === id) ?? null)} />}
       </>}
       {(showForm || editingQuest) && <TaskModal key={editingQuest?.id ?? "new"} initialValue={editingQuest ?? undefined} onClose={() => editingQuest ? setEditingQuest(null) : setShowForm(false)} onSubmit={editingQuest ? saveEditedQuest : saveNewQuest} />}
     </AppShell>
   );
+}
+
+function dayScheduleMessage(quests: Quest[]) {
+  const active = quests.filter((quest) => quest.status !== "completed" && quest.status !== "abandoned");
+  if (active.length === 0) return "할 일을 추가하면 오늘의 빈 시간에 자동 배치됩니다.";
+  if (active.some((quest) => !quest.plannedStart)) return "활동 가능 시간 안에 배치할 수 있는 시간이 부족합니다. 예상 시간을 줄이거나 설정에서 활동 가능 시간을 조정해보세요.";
+  return "오늘의 할 일이 시간표에 배치되었습니다. 작업 사이에는 10분의 여유를 둡니다.";
 }
 
 function CalendarConnectionPrompt() {

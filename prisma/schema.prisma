@@ -8,22 +8,56 @@ datasource db {
 }
 
 model Quest {
-  id              String   @id @default(cuid())
-  title           String
-  note            String?
-  location        String?
-  kind            String
-  deadline        DateTime
-  expectedMinutes Int
-  plannedStart    DateTime?
-  importance      Int
-  carryoverCount  Int      @default(0)
-  status          String
-  recurrenceJson  String?
+  id                String    @id @default(cuid())
+  title             String
+  note              String?
+  location          String?
+  kind              String
+  deadline          DateTime
+  expectedMinutes   Int       @default(30)
+  category          String    @default("other")
+  plannedStart      DateTime?
+  importance        Int       @default(2)
+  carryoverCount    Int       @default(0)
+  status            String
+  recurrenceJson    String?
   lastCarryoverDate String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  ownerId         String   @default("local")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  ownerId           String    @default("local")
+}
+
+model StudyPlan {
+  id           String       @id @default(cuid())
+  examName     String
+  subject      String
+  examDate     DateTime     @db.Date
+  scope        String
+  progress     Int
+  difficulty   Int
+  dailyMinutes Int
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  ownerId      String       @default("local")
+  blocks       StudyBlock[]
+
+  @@index([ownerId, examDate])
+}
+
+model StudyBlock {
+  id              String    @id @default(cuid())
+  studyPlanId     String
+  date            DateTime  @db.Date
+  stage           String
+  title           String
+  durationMinutes Int
+  sequence        Int
+  status          String    @default("pending")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  studyPlan       StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+
+  @@index([studyPlanId, date, status])
 }
 
 model CalendarBlock {
@@ -59,14 +93,14 @@ model Settings {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  kind      String
-  questId   String
-  message   String
-  createdAt DateTime @default(now())
-  readAt    DateTime?
+  id          String    @id @default(cuid())
+  kind        String
+  questId     String
+  message     String
+  createdAt   DateTime  @default(now())
+  readAt      DateTime?
   deliveredAt DateTime?
-  ownerId   String   @default("local")
+  ownerId     String    @default("local")
 }
 
 model PushSubscription {
@@ -92,8 +126,8 @@ model ReminderDelivery {
 }
 
 model GoogleConnection {
-  id                  String   @id @default(cuid())
-  ownerId             String   @unique @default("local")
+  id                  String    @id @default(cuid())
+  ownerId             String    @unique @default("local")
   accessToken         String?
   refreshToken        String?
   tokenExpiresAt      DateTime?
@@ -101,8 +135,8 @@ model GoogleConnection {
   dedicatedCalendarId String?
   lastSyncedAt        DateTime?
   lastSyncError       String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 model GoogleEventMapping {

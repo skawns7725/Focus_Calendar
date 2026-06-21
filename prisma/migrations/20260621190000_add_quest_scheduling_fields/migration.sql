@@ -1,0 +1,4 @@
+ALTER TABLE "Quest"
+  ALTER COLUMN "expectedMinutes" SET DEFAULT 30,
+  ALTER COLUMN "importance" SET DEFAULT 2,
+  ADD COLUMN "category" TEXT NOT NULL DEFAULT 'other';

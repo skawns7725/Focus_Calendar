@@ -1,4 +1,4 @@
-import { Quest, QuestKind, QuestStatus, RecurrenceRule } from "@/domain/types";
+import { Quest, QuestCategory, QuestKind, QuestStatus, RecurrenceRule } from "@/domain/types";
 import { db } from "../db";
 import { SettingsRepository } from "../settings-repository";
 
@@ -52,6 +52,7 @@ export class PrismaGoogleSyncRepository {
       kind: quest.kind as QuestKind,
       deadline: quest.deadline.toISOString(),
       expectedMinutes: quest.expectedMinutes,
+      category: normalizeCategory(quest.category),
       plannedStart: quest.plannedStart?.toISOString() ?? null,
       importance: quest.importance as 1 | 2 | 3,
       carryoverCount: quest.carryoverCount,
@@ -89,4 +90,8 @@ export class PrismaGoogleSyncRepository {
     await db.googleEventMapping.deleteMany({ where: { ownerId: this.ownerId, questId: id } });
     return db.quest.deleteMany({ where: { id, ownerId: this.ownerId } });
   }
+}
+
+function normalizeCategory(value: string | null | undefined): QuestCategory {
+  return value === "work" || value === "personal" || value === "study" || value === "health" ? value : "other";
 }

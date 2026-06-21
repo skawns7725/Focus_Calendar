@@ -8,9 +8,14 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { questService } = await getRequestServices(request);
+  const { questService, schedulingService } = await getRequestServices(request);
   try {
-    return NextResponse.json(await questService.create(await request.json()), { status: 201 });
+    const created = await questService.create(await request.json());
+    await schedulingService.scheduleToday().catch(() => undefined);
+    const scheduled = await questService.list()
+      .then((quests) => quests.find((quest) => quest.id === created.id) ?? created)
+      .catch(() => created);
+    return NextResponse.json(scheduled, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof ZodError ? error.issues[0]?.message : "Unable to create quest" }, { status: 400 });
   }

@@ -6,9 +6,11 @@ import { WebPushGateway } from "../push/push-gateway";
 import { createPushService } from "../push/push-service";
 import { PrismaQuestRepository } from "../quest-repository";
 import { SettingsRepository } from "../settings-repository";
+import { PrismaStudyPlanRepository } from "../study-plan-repository";
 import { createQuestService } from "./quest-service";
 import { createSchedulingService } from "./scheduling-service";
 import { createSettingsService } from "./settings-service";
+import { createStudyPlanService } from "./study-plan-service";
 
 export function createUserServices(ownerId: string) {
   const questRepository = new PrismaQuestRepository(ownerId);
@@ -16,6 +18,7 @@ export function createUserServices(ownerId: string) {
   const calendarRepository = new CalendarRepository(ownerId);
   const notificationRepository = new NotificationRepository(ownerId);
   const pushSubscriptionRepository = new PushSubscriptionRepository(ownerId);
+  const studyPlanRepository = new PrismaStudyPlanRepository(ownerId);
   const pushService = createPushService({
     settings: settingsRepository,
     subscriptions: pushSubscriptionRepository,
@@ -28,6 +31,7 @@ export function createUserServices(ownerId: string) {
     questService: createQuestService(questRepository),
     settingsService: createSettingsService(settingsRepository),
     schedulingService: createSchedulingService(questRepository, settingsRepository, calendarRepository, notificationRepository),
+    studyPlanService: createStudyPlanService(studyPlanRepository),
     notificationRepository,
     pushSubscriptionRepository,
     pushService,

@@ -1,4 +1,5 @@
 import { reconcileQuest } from "@/domain/carryover";
+import { autoScheduleTodayWithReasons } from "@/domain/auto-schedule-today";
 import { sortQuests } from "@/domain/priority";
 import { findEarliestSlot, TimeBlock } from "@/domain/scheduling";
 import { addLocalDays, localWeekday, toInstant, toLocalDate } from "@/domain/time-zone";
@@ -17,7 +18,39 @@ export function createSchedulingService(
   calendar: Pick<CalendarRepository, "list">,
   notifications: NotificationWriter = new NotificationRepository()
 ) {
+  const scheduleToday = async (now = new Date()) => {
+    const userSettings = await settings.get();
+    const today = toLocalDate(now, userSettings.timeZone);
+    const allQuests = await quests.list();
+    const occupied = await blocksForDate(calendar, today, userSettings.timeZone);
+    occupied.push(...allQuests
+      .filter((quest) => quest.plannedStart
+        && quest.status !== "completed"
+        && quest.status !== "abandoned"
+        && toLocalDate(new Date(quest.plannedStart), userSettings.timeZone) === today)
+      .map((quest) => ({
+        start: quest.plannedStart!,
+        end: new Date(new Date(quest.plannedStart!).getTime() + quest.expectedMinutes * 60_000).toISOString()
+      })));
+    const isWeekend = [0, 6].includes(localWeekday(today));
+    const schedule = autoScheduleTodayWithReasons({
+      quests: allQuests,
+      date: today,
+      activityStart: isWeekend ? userSettings.weekendStart : userSettings.weekdayStart,
+      activityEnd: isWeekend ? userSettings.weekendEnd : userSettings.weekdayEnd,
+      fixedBlocks: occupied,
+      timeZone: userSettings.timeZone,
+      now
+    });
+
+    for (const placement of schedule.placements) {
+      await quests.update(placement.questId, { plannedStart: placement.start, status: "scheduled" });
+    }
+    return schedule;
+  };
+
   return {
+    scheduleToday,
     async reconcile(now = new Date()) {
       const userSettings = await settings.get();
       const today = toLocalDate(now, userSettings.timeZone);
@@ -37,7 +70,8 @@ export function createSchedulingService(
         if (slot) fixedBlocks.push(slot);
         results.push(result);
       }
-      return results;
+      const todaySchedule = await scheduleToday(now);
+      return { carryovers: results, today: todaySchedule };
     },
 
     async moveToNearestAvailableDay(id: string, now = new Date()) {

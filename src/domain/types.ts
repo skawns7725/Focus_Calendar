@@ -7,6 +7,7 @@ export type QuestStatus =
   | "abandoned";
 
 export type QuestKind = "flexible" | "fixed";
+export type QuestCategory = "work" | "personal" | "study" | "health" | "other";
 
 export type RecurrenceRule =
   | { frequency: "daily" }
@@ -23,6 +24,7 @@ export interface Quest {
   kind: QuestKind;
   deadline: string;
   expectedMinutes: number;
+  category: QuestCategory;
   plannedStart: string | null;
   importance: 1 | 2 | 3;
   carryoverCount: number;

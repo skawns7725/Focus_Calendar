@@ -19,13 +19,15 @@ it("submits familiar calendar fields with an optional note", () => {
   fireEvent.change(screen.getByLabelText("일정 제목"), { target: { value: "병원 예약" } });
   fireEvent.change(screen.getByLabelText("메모"), { target: { value: "접수처에 먼저 방문" } });
   fireEvent.change(screen.getByLabelText("장소"), { target: { value: "서울 중앙병원" } });
+  fireEvent.change(screen.getByLabelText("카테고리"), { target: { value: "health" } });
   fireEvent.change(screen.getByLabelText("마감"), { target: { value: "2026-06-03T15:00" } });
   fireEvent.click(screen.getByRole("button", { name: "일정 추가" }));
 
   expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
     title: "병원 예약",
     note: "접수처에 먼저 방문",
-    location: "서울 중앙병원"
+    location: "서울 중앙병원",
+    category: "health"
   }));
 });
 

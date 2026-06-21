@@ -1,7 +1,21 @@
+import { TodayScheduleResult } from "@/domain/auto-schedule-today";
 import { Quest } from "@/domain/types";
+import { StudyPlanView } from "@/domain/study-plan";
 
 export async function listQuests(): Promise<Quest[]> {
   return request("/api/quests");
+}
+
+export async function listStudyPlans(): Promise<StudyPlanView[]> {
+  return request("/api/study-plans");
+}
+
+export async function createStudyPlan(input: unknown): Promise<StudyPlanView> {
+  return request("/api/study-plans", { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function completeStudyBlock(id: string) {
+  return request(`/api/study-blocks/${id}/complete`, { method: "POST" });
 }
 
 export async function listCalendarBlocks(from: string, to: string) {
@@ -24,7 +38,7 @@ export async function updateQuest(id: string, input: Partial<Quest>): Promise<Qu
   return request(`/api/quests/${id}`, { method: "PUT", body: JSON.stringify(input) });
 }
 
-export async function reconcileSchedule() {
+export async function reconcileSchedule(): Promise<{ carryovers: unknown[]; today: TodayScheduleResult }> {
   return request("/api/schedule/reconcile", { method: "POST" });
 }
 

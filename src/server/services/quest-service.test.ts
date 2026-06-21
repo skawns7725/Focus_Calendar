@@ -22,6 +22,37 @@ describe("createQuestService", () => {
     });
 
     expect(saved).toHaveLength(1);
+    expect(saved).toMatchObject([{ category: "other" }]);
+  });
+
+  it("adds safe scheduling defaults for legacy task input", async () => {
+    const saved: unknown[] = [];
+    const service = createQuestService({
+      list: async () => [],
+      save: async (quest) => { saved.push(quest); return quest; },
+      update: async () => null
+    });
+
+    await service.create({
+      title: "Legacy task",
+      kind: "flexible",
+      deadline: "2026-06-02T18:00:00+09:00"
+    });
+
+    expect(saved).toMatchObject([{ expectedMinutes: 30, importance: 2, category: "other" }]);
+  });
+
+  it("persists completion through the repository", async () => {
+    const updates: unknown[] = [];
+    const service = createQuestService({
+      list: async () => [],
+      save: async (quest) => quest,
+      update: async (id, changes) => { updates.push({ id, changes }); return null; }
+    });
+
+    await service.complete("task-1");
+
+    expect(updates).toEqual([{ id: "task-1", changes: { status: "completed" } }]);
   });
 
   it("trims an optional calendar note", async () => {

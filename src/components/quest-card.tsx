@@ -14,6 +14,7 @@ export function QuestCard({ quest, onComplete, onDelete, onNearestDate, onEdit }
           <span className={`quest-chip ${overdue ? "danger" : ""}`}>{overdue ? "마감 지남" : quest.kind === "fixed" ? "시작 시간 지정" : "자동 배치"}</span>
           {quest.carryoverCount > 0 && <span className="quest-chip muted">다음 날로 이동 {quest.carryoverCount}회</span>}
           {quest.recurrenceRule && <span className="quest-chip muted">{repeatLabel(quest.recurrenceRule.frequency)}</span>}
+          <span className="quest-chip muted">{categoryLabel(quest.category)}</span>
         </div>
         <h2>{quest.title}</h2>
         <div className="quest-meta">
@@ -31,6 +32,10 @@ export function QuestCard({ quest, onComplete, onDelete, onNearestDate, onEdit }
     </article>
     </SwipeActions>
   );
+}
+
+function categoryLabel(category: Quest["category"]) {
+  return category === "work" ? "업무" : category === "personal" ? "개인" : category === "study" ? "학습" : category === "health" ? "건강" : "기타";
 }
 
 function repeatLabel(frequency: "daily" | "weekdays" | "selected_weekdays" | "weekly") {

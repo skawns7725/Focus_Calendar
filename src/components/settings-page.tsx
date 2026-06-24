@@ -27,6 +27,7 @@ interface GoogleStatus {
   configured: boolean;
   connected: boolean;
   dedicatedCalendarId: string | null;
+  writeEnabled?: boolean;
   lastSyncedAt?: string | null;
   lastSyncError?: string | null;
 }
@@ -177,7 +178,9 @@ export function SettingsPage() {
         {googleConnectionError && <p className="form-error">Google Calendar 연결을 완료하지 못했습니다. 다시 연결해 주세요.</p>}
         {googleLoaded && !google.configured && <p className="form-error">Google Cloud OAuth 설정이 필요합니다.</p>}
         {google.connected ? <p className="saved-message">Google Calendar가 연결되어 있습니다.</p> : <a className="secondary-button" href="/api/google/connect?mode=read">읽기 전용으로 연결</a>}
-        {google.connected && !google.dedicatedCalendarId && <a className="secondary-button" href="/api/google/connect?mode=write">양방향 동기화 권한 요청</a>}
+        {google.connected && !google.dedicatedCalendarId && google.writeEnabled
+          ? <a className="secondary-button" href="/api/google/connect?mode=write">양방향 동기화 권한 요청</a>
+          : google.connected && !google.dedicatedCalendarId && <p className="form-error">현재는 읽기 전용 동기화만 지원합니다.</p>}
         {google.dedicatedCalendarId && <p className="saved-message">전용 Focus Calendar와 양방향 동기화가 준비되었습니다.</p>}
         {google.connected && <button className="secondary-button" type="button" disabled={syncing || !settings.googleImportMode} onClick={() => void syncNow()}>{syncing ? "동기화 중..." : "지금 동기화"}</button>}
         {syncResult && <p className={syncResult.kind === "error" ? "form-error" : "saved-message"} role="status">{syncResult.message}</p>}

@@ -47,6 +47,7 @@ Do not use a Production database URL for verification. Route-mock E2E tests do n
 ## Google Cloud OAuth Setup
 
 1. Create a `Focus Calendar` project in [Google Cloud Console](https://console.cloud.google.com/).
+GOOGLE_CALENDAR_WRITE_ENABLED="false"
 2. Enable `Google Calendar API` under `APIs & Services`.
 3. Configure the OAuth consent screen.
 4. Create an OAuth client with the `Web application` type.
@@ -87,7 +88,7 @@ openssl rand -base64 32
 - The default Google connection is read-only.
 - After connecting, choose `all calendars` or `selected calendars only` before the first import.
 - Imported calendars are used as busy blocks. The app never writes to them.
-- Two-way sync requests broader permission only after the user enables it.
+- Two-way sync requests broader permission only after the user enables it and `GOOGLE_CALENDAR_WRITE_ENABLED` is explicitly set to `true`.
 - App-created tasks are written only to the dedicated non-primary `Focus Calendar`.
 - Completing or deleting a task removes its dedicated Google event.
 - Editing or deleting an app-created event in `Focus Calendar` is reflected back into the app.

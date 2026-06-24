@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { exchangeGoogleCode, fetchGoogleProfile, getGoogleOAuthStateSecret } from "@/server/google/google-auth";
 import { verifyGoogleOAuthState } from "@/server/google/google-oauth-state";
 import { createGoogleServices } from "@/server/google";
+import { isGoogleCalendarWriteEnabled } from "@/server/google/google-feature-flags";
+import { captureServerError } from "@/server/observability/sentry";
 import { serializeSessionCookie } from "@/server/auth/cookies";
 import { SessionRepository } from "@/server/auth/session-repository";
 import { UserRepository } from "@/server/auth/user-repository";
@@ -13,6 +15,9 @@ export async function GET(request: Request) {
   if (!code || !state) return NextResponse.json({ error: "Missing Google OAuth callback data" }, { status: 400 });
   try {
     const { mode, ownerId } = verifyGoogleOAuthState(state, getGoogleOAuthStateSecret());
+    if (mode === "write" && !isGoogleCalendarWriteEnabled()) {
+      return NextResponse.redirect(new URL("/settings?google=write-disabled", request.url));
+    }
     const token = await exchangeGoogleCode(code);
     const profile = await fetchGoogleProfile(token.access_token);
     const user = await new UserRepository().upsertGoogleProfile(profile);
@@ -30,12 +35,14 @@ export async function GET(request: Request) {
       await googleSyncService.enableTwoWaySync();
     }
     await googleSyncService.sync().catch((error) => {
+      captureServerError(error, { source: "google_initial_sync", mode });
       console.error("Initial Google Calendar sync failed", error);
     });
     const response = NextResponse.redirect(new URL("/settings?google=connected", request.url));
     response.headers.set("set-cookie", serializeSessionCookie(await new SessionRepository().create(user.id)));
     return response;
   } catch (error) {
+    captureServerError(error, { source: "google_oauth_callback" });
     console.error("Google OAuth callback failed", error);
     return NextResponse.redirect(new URL("/settings?google=error", request.url));
   }

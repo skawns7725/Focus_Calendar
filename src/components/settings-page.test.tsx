@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { syncGoogleCalendar } from "@/client/api";
+import { getGoogleStatus, syncGoogleCalendar } from "@/client/api";
 import { SettingsPage } from "./settings-page";
 
 vi.mock("@/client/api", () => ({
@@ -12,7 +12,7 @@ vi.mock("@/client/api", () => ({
   })),
   updateSettings: vi.fn(),
   getGoogleStatus: vi.fn(async () => ({
-    configured: true, connected: true, dedicatedCalendarId: null, lastSyncedAt: null, lastSyncError: null
+    configured: true, connected: true, dedicatedCalendarId: null, writeEnabled: false, lastSyncedAt: null, lastSyncError: null
   })),
   listGoogleCalendars: vi.fn(async () => [{ id: "primary", summary: "기본 캘린더" }, { id: "work", summary: "업무" }]),
   listUnreadNotifications: vi.fn(async () => []),
@@ -39,6 +39,28 @@ describe("settings page", () => {
     expect(await screen.findByLabelText("업무")).toBeInTheDocument();
     expect(await screen.findByText("브라우저 알림")).toBeInTheDocument();
     expect(screen.getByLabelText("시작 전 알림")).toHaveValue(10);
+  });
+
+  it("explains read-only Google sync instead of showing the two-way sync CTA when writes are disabled", async () => {
+    render(<SettingsPage />);
+
+    expect(await screen.findByText("현재는 읽기 전용 동기화만 지원합니다.")).toBeVisible();
+    expect(screen.queryByRole("link", { name: "양방향 동기화 권한 요청" })).not.toBeInTheDocument();
+  });
+
+  it("shows the two-way sync CTA when Google Calendar writes are enabled", async () => {
+    vi.mocked(getGoogleStatus).mockResolvedValueOnce({
+      configured: true,
+      connected: true,
+      dedicatedCalendarId: null,
+      writeEnabled: true,
+      lastSyncedAt: null,
+      lastSyncError: null
+    });
+
+    render(<SettingsPage />);
+
+    expect(await screen.findByRole("link", { name: "양방향 동기화 권한 요청" })).toHaveAttribute("href", "/api/google/connect?mode=write");
   });
 
   it("applies a selected theme immediately", async () => {

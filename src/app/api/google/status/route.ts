@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { isGoogleCalendarWriteEnabled } from "@/server/google/google-feature-flags";
 import { getRequestGoogleServices } from "@/server/services/request-services";
 
 export async function GET(request: Request) {
   const { googleSyncService } = await getRequestGoogleServices(request);
-  return NextResponse.json(await googleSyncService.status());
+  const status = await googleSyncService.status();
+  return NextResponse.json({ ...(status as Record<string, unknown>), writeEnabled: isGoogleCalendarWriteEnabled() });
 }

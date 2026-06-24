@@ -1,0 +1,74 @@
+name: CI PostgreSQL
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+
+jobs:
+  test-postgres:
+    name: Test with disposable PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: focus_calendar_test
+          POSTGRES_PASSWORD: focus_calendar_test
+          POSTGRES_DB: focus_calendar_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U focus_calendar_test -d focus_calendar_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://focus_calendar_test:focus_calendar_test@localhost:5432/focus_calendar_test
+      RUN_POSTGRES_INTEGRATION: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Apply migrations to disposable PostgreSQL
+        run: npx prisma migrate deploy
+
+      - name: Validate Prisma schema
+        run: npm run db:validate
+
+      - name: Check migration status
+        run: npm run db:migrate:status
+
+      - name: Run unit and integration tests
+        run: npm test
+
+      - name: Build application
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run route-mock Playwright smoke tests
+        run: npm run test:e2e
+
+      - name: Check diff whitespace
+        run: git diff --check

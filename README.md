@@ -23,6 +23,18 @@ npm run build
 npm audit --omit=dev
 ```
 
+### CI PostgreSQL Verification
+
+If local Docker or PostgreSQL is unavailable, use the `CI PostgreSQL` GitHub Actions workflow. It starts a disposable PostgreSQL service database and sets:
+
+```env
+DATABASE_URL=postgresql://focus_calendar_test:focus_calendar_test@localhost:5432/focus_calendar_test
+```
+
+The workflow runs Prisma migrations only against that disposable service database, then runs Prisma validation, migration status, unit/integration tests, build, route-mock Playwright smoke tests, and whitespace checks. It does not require Preview or Production database secrets.
+
+Do not use a Production database URL for verification. Route-mock E2E tests do not replace PostgreSQL-backed tests for real persistence, owner isolation, Prisma relations, or migration state. Do not treat a build as deployment-ready until PostgreSQL-based `npm test`, `npm run db:validate`, and `npm run db:migrate:status` pass in a safe Local, Preview, or CI disposable database environment.
+
 ## Prisma Safety
 
 - `npm run db:validate` checks `schema.prisma` without changing a database.

@@ -53,7 +53,6 @@ Do not use a Production database URL for verification. Route-mock E2E tests do n
 ## Google Cloud OAuth Setup
 
 1. Create a `Focus Calendar` project in [Google Cloud Console](https://console.cloud.google.com/).
-GOOGLE_CALENDAR_WRITE_ENABLED="false"
 2. Enable `Google Calendar API` under `APIs & Services`.
 3. Configure the OAuth consent screen.
 4. Create an OAuth client with the `Web application` type.
@@ -66,18 +65,19 @@ GOOGLE_CLIENT_SECRET="..."
 GOOGLE_REDIRECT_URI="http://localhost:3000/api/google/callback"
 GOOGLE_OAUTH_STATE_SECRET="..."
 GOOGLE_TOKEN_ENCRYPTION_KEY="..."
+GOOGLE_CALENDAR_WRITE_ENABLED="false"
 SCHEDULER_SECRET="..."
 VAPID_SUBJECT="mailto:admin@example.com"
 VAPID_PUBLIC_KEY="..."
 VAPID_PRIVATE_KEY="..."
-## Observability And Product Analytics
-
-- Sentry is inactive unless `SENTRY_DSN` or `NEXT_PUBLIC_SENTRY_DSN` is configured.
-- Sentry events pass through a scrubber that removes authorization headers, cookies, tokens, database URLs, raw titles, notes, descriptions, locations, emails, and Google event titles.
-- To upload production source maps from Vercel, configure `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` in the deployment environment. Keep these values out of client code and do not print them in logs.
-- PostHog is inactive unless `NEXT_PUBLIC_POSTHOG_KEY` is configured.
-- PostHog events use product-safe payloads only, such as count, category, duration bucket, risk level, and source type. Do not send task titles, notes, locations, calendar event titles, descriptions, email addresses, tokens, or raw calendar details.
-
+SENTRY_DSN=""
+NEXT_PUBLIC_SENTRY_DSN=""
+SENTRY_ENVIRONMENT=""
+SENTRY_AUTH_TOKEN=""
+SENTRY_ORG=""
+SENTRY_PROJECT=""
+NEXT_PUBLIC_POSTHOG_KEY=""
+NEXT_PUBLIC_POSTHOG_HOST=""
 ```
 
 Use a separate random `GOOGLE_OAUTH_STATE_SECRET` outside local development. It signs short-lived OAuth callback state.
@@ -100,6 +100,14 @@ openssl rand -base64 32
 - Editing or deleting an app-created event in `Focus Calendar` is reflected back into the app.
 - Sync runs when the dashboard opens, after task changes, and when `Sync now` is pressed in settings.
 - Incremental cursors, expiry recovery, pagination, and token refresh are covered by local fake-gateway tests.
+
+## Observability And Product Analytics
+
+- Sentry is inactive unless `SENTRY_DSN` or `NEXT_PUBLIC_SENTRY_DSN` is configured.
+- Sentry events pass through a scrubber that removes authorization headers, cookies, tokens, database URLs, raw titles, notes, descriptions, locations, emails, and Google event titles.
+- To upload production source maps from Vercel, configure `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` in the deployment environment. Keep these values out of client code and do not print them in logs.
+- PostHog is inactive unless `NEXT_PUBLIC_POSTHOG_KEY` is configured.
+- PostHog events use product-safe payloads only, such as count, category, duration bucket, risk level, and source type. Do not send task titles, notes, locations, calendar event titles, descriptions, email addresses, tokens, or raw calendar details.
 
 ## Browser Push Notifications
 

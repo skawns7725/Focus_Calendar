@@ -7,7 +7,7 @@ export function QuestCard({ quest, onComplete, onDelete, onNearestDate, onEdit }
   const overdue = quest.status === "overdue" || new Date(quest.deadline) < new Date();
   return (
     <SwipeActions onComplete={() => onComplete(quest.id)} onDelete={() => onDelete(quest.id)} onEdit={() => onEdit(quest.id)}>
-    <article className={`quest-card ${overdue ? "overdue" : ""}`} data-status={overdue ? "overdue" : quest.status}>
+    <article className={`quest-card ${overdue ? "overdue" : ""}`} data-status={overdue ? "overdue" : quest.status} data-testid="quest-card">
       <div className="quest-rank">{overdue ? "!" : quest.importance}</div>
       <div className="quest-copy">
         <div className="quest-topline">
@@ -27,7 +27,7 @@ export function QuestCard({ quest, onComplete, onDelete, onNearestDate, onEdit }
         {quest.status === "needs_attention" && <div className="overdue-actions"><button type="button" onClick={() => onNearestDate(quest.id)}>가장 가까운 날짜로 이동</button><button type="button" onClick={() => onEdit(quest.id)}>직접 수정</button></div>}
         {overdue && <div className="overdue-actions"><button type="button" onClick={() => onEdit(quest.id)}>일정 수정</button><button type="button" onClick={() => onDelete(quest.id)}>삭제</button></div>}
       </div>
-      <button className="complete-button desktop-complete" type="button" onClick={() => onComplete(quest.id)}><CheckIcon size={16} />완료</button>
+      <button className="complete-button desktop-complete" data-testid="quest-complete-button" type="button" onClick={() => onComplete(quest.id)}><CheckIcon size={16} />완료</button>
       <SlideToComplete onComplete={() => onComplete(quest.id)} />
     </article>
     </SwipeActions>

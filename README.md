@@ -23,6 +23,12 @@ npm run build
 npm audit --omit=dev
 ```
 
+### Playwright E2E Scope
+
+The current Playwright specs are route-mock smoke tests. They verify UI rendering, selector stability, responsive layout basics, and the default user flow from the browser's point of view.
+
+They do not verify real database persistence, authenticated owner isolation, Prisma relations, Preview or Production migration state, or the real Google OAuth flow. Run the Prisma and API checks against a safe local or Preview PostgreSQL database before treating a build as deployment-ready.
+
 ### CI PostgreSQL Verification
 
 If local Docker or PostgreSQL is unavailable, use the `CI PostgreSQL` GitHub Actions workflow. It starts a disposable PostgreSQL service database and sets:

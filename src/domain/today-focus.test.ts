@@ -72,6 +72,33 @@ describe("buildTodayFocusItems", () => {
       ["short", "예상 시간이 짧아 지금 처리하기 좋아요"]
     ]);
   });
+
+  it("uses category as a tie-breaker before expected time for otherwise equal focus items", () => {
+    const items = buildTodayFocusItems({
+      today: "2026-06-24",
+      timeZone: "Asia/Seoul",
+      quests: [
+        quest({
+          id: "short-other",
+          category: "other",
+          plannedStart: "2026-06-24T02:00:00.000Z",
+          deadline: "2026-07-01T09:00:00.000Z",
+          importance: 2,
+          expectedMinutes: 15
+        }),
+        quest({
+          id: "study-longer",
+          category: "study",
+          plannedStart: "2026-06-24T02:00:00.000Z",
+          deadline: "2026-07-01T09:00:00.000Z",
+          importance: 2,
+          expectedMinutes: 50
+        })
+      ]
+    });
+
+    expect(items.map((item) => item.id)).toEqual(["study-longer", "short-other"]);
+  });
 });
 
 function studyBlock(overrides: Partial<StudyBlock> = {}): StudyBlock {

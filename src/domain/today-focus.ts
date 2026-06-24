@@ -72,12 +72,22 @@ export function buildTodayFocusItems(_input: {
 function compareTodayFocusItems(a: TodayFocusItem, b: TodayFocusItem) {
   if (a.sortTime && b.sortTime) return Date.parse(a.sortTime) - Date.parse(b.sortTime)
     || b.importance - a.importance
+    || categoryPriority(b.category) - categoryPriority(a.category)
     || a.expectedMinutes - b.expectedMinutes;
   if (a.sortTime) return -1;
   if (b.sortTime) return 1;
   return (a.sequence ?? 0) - (b.sequence ?? 0)
     || b.importance - a.importance
+    || categoryPriority(b.category) - categoryPriority(a.category)
     || a.expectedMinutes - b.expectedMinutes;
+}
+
+function categoryPriority(category: Quest["category"]) {
+  return category === "study" ? 4
+    : category === "work" ? 3
+      : category === "health" ? 2
+        : category === "personal" ? 1
+          : 0;
 }
 
 function questReason(quest: Quest, today: string) {

@@ -9,8 +9,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "db:validate": "prisma validate",
+    "db:migrate:status": "prisma migrate status",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "db:push:local": "prisma db push"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",

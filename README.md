@@ -8,7 +8,7 @@ Focus Calendar is a responsive schedule manager for deciding what to do next. It
 2. Create a PostgreSQL database and set its connection string as `DATABASE_URL`.
 3. Run `npm install`.
 4. Run `npm run db:generate`.
-5. Run `npm run db:push`.
+5. For local-only schema experiments, run `npm run db:push:local`. Do not use this command against Preview or Production databases.
 6. Run `npm run dev`.
 7. Open `http://localhost:3000`.
 
@@ -17,9 +17,20 @@ Focus Calendar is a responsive schedule manager for deciding what to do next. It
 ```bash
 npm test
 npm run test:e2e
+npm run db:validate
+npm run db:migrate:status
 npm run build
 npm audit --omit=dev
 ```
+
+## Prisma Safety
+
+- `npm run db:validate` checks `schema.prisma` without changing a database.
+- `npm run db:migrate:status` is the preferred read-only migration check when `DATABASE_URL` points to a safe local or preview database.
+- `npm run db:push:local` is for local development only. Do not run it against Preview or Production.
+- Production and Preview databases must use separate `DATABASE_URL` values. Never point local commands at the Production URL.
+- Existing databases that already match the current schema must not receive the baseline SQL directly. If `_prisma_migrations` needs to be aligned, inspect the live schema first and only then consider Prisma's `migrate resolve --applied` strategy in a controlled deployment run.
+- Application builds generate Prisma Client but do not push or deploy migrations.
 
 ## Google Cloud OAuth Setup
 
@@ -120,7 +131,7 @@ When `SCHEDULER_SECRET` is unset, local calls are allowed without the header. In
 7. Set `GOOGLE_REDIRECT_URI` to `https://<project-domain>/api/google/callback`, add the exact URI in Google Cloud Console, and redeploy again.
 8. Create the two cron-job.org jobs shown below.
 
-Vercel uses the `vercel-build` script to apply the Prisma schema to Neon before compiling the application.
+Vercel uses the `vercel-build` script to generate Prisma Client before compiling the application. It does not push schema changes to Neon.
 
 ## Container Deployment
 
@@ -133,7 +144,7 @@ docker run --rm -p 3000:3000 \
   focus-calendar
 ```
 
-Use HTTPS in production. Set `GOOGLE_REDIRECT_URI` to the deployed `/api/google/callback` URL and register that exact URL in Google Cloud Console. The container applies the Prisma schema before starting the server.
+Use HTTPS in production. Set `GOOGLE_REDIRECT_URI` to the deployed `/api/google/callback` URL and register that exact URL in Google Cloud Console. The container starts the server without applying schema changes.
 
 Configure the hosting platform scheduler:
 

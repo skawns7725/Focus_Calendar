@@ -123,7 +123,7 @@ Expired browser subscriptions are removed automatically after a push provider re
 
 - Create a PostgreSQL database and configure `DATABASE_URL`.
 - Configure HTTPS, Google OAuth, `GOOGLE_TOKEN_ENCRYPTION_KEY`, VAPID keys, and `SCHEDULER_SECRET`.
-- Schedule reconciliation every 15 minutes and notification dispatch every 5 minutes.
+- Configure Vercel Cron or an equivalent scheduler with `Authorization: Bearer $SCHEDULER_SECRET`.
 - Back up the PostgreSQL database regularly.
 
 ## Automatic Carryover
@@ -139,7 +139,7 @@ curl -X POST http://localhost:3000/api/schedule/reconcile \
   -H "Authorization: Bearer $SCHEDULER_SECRET"
 ```
 
-When `SCHEDULER_SECRET` is unset, local calls are allowed without the header. In production, configure a random secret and schedule this request every 15 minutes.
+When `SCHEDULER_SECRET` is unset, local POST calls are allowed without the header for the signed-in or local development owner. Hosted cron GET calls require the secret.
 
 ## Vercel Hobby Deployment
 
@@ -150,7 +150,7 @@ When `SCHEDULER_SECRET` is unset, local calls are allowed without the header. In
 5. Add the Google OAuth, token-encryption, VAPID, and scheduler environment variables under `Settings > Environment Variables`.
 6. Redeploy the project.
 7. Set `GOOGLE_REDIRECT_URI` to `https://<project-domain>/api/google/callback`, add the exact URI in Google Cloud Console, and redeploy again.
-8. Create the two cron-job.org jobs shown below.
+8. Use the included `vercel.json` cron configuration or create equivalent scheduler calls.
 
 Vercel uses the `vercel-build` script to generate Prisma Client before compiling the application. It does not push schema changes to Neon.
 

@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { Quest } from "@/domain/types";
 import { UnplacedReason } from "@/domain/auto-schedule-today";
-import { abandonQuest, completeQuest, createQuest, getGoogleStatus, getPushStatus, listQuests, listUnreadNotifications, markNotificationsRead, moveQuestToNearestDay, reconcileSchedule, subscribePush, syncGoogleCalendar, unsubscribePush, updateQuest } from "@/client/api";
+import { captureProductEvent } from "@/client/analytics";
+import { abandonQuest, completeQuest, completeStudyBlock, createQuest, getGoogleStatus, getPushStatus, listQuests, listStudyPlans, listUnreadNotifications, markNotificationsRead, moveQuestToNearestDay, reconcileSchedule, subscribePush, syncGoogleCalendar, unsubscribePush, updateQuest } from "@/client/api";
+import type { StudyBlock, StudyPlanView } from "@/domain/study-plan";
 import { enableBrowserNotifications } from "@/client/push";
 import { AttentionPanel, DisplayNotification } from "./attention-panel";
 import { AppShell } from "./app-shell";
@@ -25,12 +27,17 @@ export function Dashboard() {
   const [notifications, setNotifications] = useState<DisplayNotification[]>([]);
   const [pushStatus, setPushStatus] = useState<PushStatus | null>(null);
   const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
+  const [studyPlans, setStudyPlans] = useState<StudyPlanView[]>([]);
   const [syncWarning, setSyncWarning] = useState<string | null>(null);
   const [unplacedReasons, setUnplacedReasons] = useState<Partial<Record<string, UnplacedReason>>>({});
   const remainingCount = quests.filter((quest) => quest.status !== "completed" && quest.status !== "abandoned").length;
 
   async function refresh() {
     setQuests(await listQuests().catch(() => []));
+  }
+
+  async function refreshStudyPlans() {
+    setStudyPlans(await listStudyPlans().catch(() => []));
   }
 
   useEffect(() => {
@@ -40,6 +47,7 @@ export function Dashboard() {
 
   async function syncAndRefresh() {
     await refresh();
+    await refreshStudyPlans();
     const reconciliation = await reconcileSchedule().catch(() => null);
     if (reconciliation) {
       setUnplacedReasons(Object.fromEntries(reconciliation.today.unplaced.map((item) => [item.questId, item.reason])));
@@ -51,6 +59,7 @@ export function Dashboard() {
         .catch(() => setSyncWarning("Google Calendar 일정을 가져오지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요."));
     }
     await refresh();
+    await refreshStudyPlans();
     setNotifications(await listUnreadNotifications().catch(() => []));
   }
 
@@ -61,15 +70,40 @@ export function Dashboard() {
   }
 
   async function finishQuest(id: string) {
+    const completed = quests.find((quest) => quest.id === id);
     setQuests((current) => current.map((quest) => quest.id === id ? { ...quest, status: "completed" } : quest));
     try {
       await completeQuest(id);
+      captureProductEvent("task_completed", {
+        category: completed?.category,
+        expectedMinutes: completed?.expectedMinutes,
+        sourceType: "quest"
+      });
       setCompletedCount((count) => count + 1);
       setToastVisible(true);
       await syncAndRefresh();
       window.setTimeout(() => setToastVisible(false), 2400);
     } catch {
       await refresh();
+    }
+  }
+
+  async function finishStudyBlock(id: string) {
+    const completed = studyPlans.flatMap((plan) => plan.blocks).find((block) => block.id === id);
+    setStudyPlans((current) => updateStudyBlockStatus(current, id, "completed"));
+    try {
+      await completeStudyBlock(id);
+      captureProductEvent("task_completed", {
+        category: "study",
+        expectedMinutes: completed?.durationMinutes,
+        sourceType: "study_block"
+      });
+      setCompletedCount((count) => count + 1);
+      setToastVisible(true);
+      await refreshStudyPlans();
+      window.setTimeout(() => setToastVisible(false), 2400);
+    } catch {
+      await refreshStudyPlans();
     }
   }
 
@@ -81,6 +115,7 @@ export function Dashboard() {
 
   async function moveNearest(id: string) {
     await moveQuestToNearestDay(id);
+    captureProductEvent("task_rescheduled", { sourceType: "quest" });
     await syncAndRefresh();
   }
 
@@ -111,16 +146,16 @@ export function Dashboard() {
     <AppShell
       title="오늘의 자동 계획"
       subtitle="할 일을 입력하면 오늘의 빈 시간에 자동으로 배치합니다."
-      actions={<button className="primary-button" type="button" onClick={() => setShowForm((visible) => !visible)}><PlusIcon size={16} />할 일 추가</button>}
+      actions={<button className="primary-button" data-testid="add-task-button" type="button" onClick={() => setShowForm((visible) => !visible)}><PlusIcon size={16} />할 일 추가</button>}
     >
-      <TodayFocusBlocks quests={quests} unplacedReasons={unplacedReasons} onComplete={(id) => void finishQuest(id)} onAdd={() => setShowForm(true)} />
+      <TodayFocusBlocks quests={quests} studyBlocks={studyPlans.flatMap((plan) => plan.blocks)} unplacedReasons={unplacedReasons} onComplete={(id) => void finishQuest(id)} onCompleteStudyBlock={(id) => void finishStudyBlock(id)} onAdd={() => setShowForm(true)} />
       <section className="dashboard-summary">
         <div><span>오늘 완료</span><strong>{completedCount}</strong></div>
         <div><span>남은 할 일</span><strong>{remainingCount}</strong></div>
         <div><span>정렬 기준</span><strong className="summary-text">마감일 우선</strong></div>
       </section>
       {remainingCount > 0 && <NowPanel quests={quests} onAdd={() => setShowForm(true)} onComplete={(id) => void finishQuest(id)} />}
-      <StudyPlanScheduler />
+      <StudyPlanScheduler onChanged={refreshStudyPlans} />
       {syncWarning && <div className="sync-warning" role="status"><span>{syncWarning}</span><button className="secondary-button" type="button" onClick={() => void syncAndRefresh()}>다시 시도</button></div>}
       <AttentionPanel notifications={notifications} onRead={(ids) => void readNotifications(ids)} />
       {pushStatus && <NotificationPreferencePrompt status={pushStatus} onEnable={() => void enableNotifications()} onDisable={() => void disableNotifications()} />}
@@ -130,4 +165,11 @@ export function Dashboard() {
       {toastVisible && <CompletionToast completedCount={completedCount} />}
     </AppShell>
   );
+}
+
+function updateStudyBlockStatus(plans: StudyPlanView[], blockId: string, status: StudyBlock["status"]) {
+  return plans.map((plan) => ({
+    ...plan,
+    blocks: plan.blocks.map((block) => block.id === blockId ? { ...block, status } : block)
+  }));
 }

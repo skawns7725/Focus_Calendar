@@ -49,6 +49,23 @@ describe("autoScheduleToday", () => {
     ]);
   });
 
+  it("uses shorter expected time as a tie-breaker after deadline and importance", () => {
+    const placements = autoScheduleToday({
+      quests: [
+        quest({ id: "long", plannedStart: null, deadline: "2026-06-22T09:00:00.000Z", importance: 2, expectedMinutes: 50 }),
+        quest({ id: "short", plannedStart: null, deadline: "2026-06-22T09:00:00.000Z", importance: 2, expectedMinutes: 15 })
+      ],
+      date: "2026-06-22",
+      activityStart: "09:00",
+      activityEnd: "11:00",
+      fixedBlocks: [],
+      timeZone: "Asia/Seoul",
+      now: new Date("2026-06-21T23:00:00.000Z")
+    });
+
+    expect(placements.map((placement) => placement.questId)).toEqual(["short", "long"]);
+  });
+
   it("does not place a task past the end of active hours", () => {
     const placements = autoScheduleToday({
       quests: [quest({ id: "too-long", plannedStart: null, expectedMinutes: 61 })],

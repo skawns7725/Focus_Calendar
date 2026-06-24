@@ -38,6 +38,8 @@ afterEach(cleanup);
 it("shows study plans with D-day, risk, scope, and dated stages", async () => {
   render(<StudyPlanScheduler />);
 
+  expect(screen.getByText("Quest는 해야 할 목표, StudyPlan은 목표를 날짜별 학습 계획으로 쪼갠 것입니다.")).toBeVisible();
+  expect(screen.getByText("StudyBlock은 오늘 실제로 처리할 학습 단위이며 Today Focus에도 이어집니다.")).toBeVisible();
   expect(await screen.findByRole("heading", { name: "기말고사 · 열역학" })).toBeVisible();
   expect(screen.getByText("D-3")).toBeVisible();
   expect(screen.getByText("위험도 높음")).toBeVisible();

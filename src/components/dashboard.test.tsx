@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { completeQuest, getGoogleStatus, listQuests, reconcileSchedule, syncGoogleCalendar } from "@/client/api";
+import { completeQuest, completeStudyBlock, getGoogleStatus, listQuests, listStudyPlans, reconcileSchedule, syncGoogleCalendar } from "@/client/api";
+import type { StudyPlanView } from "@/domain/study-plan";
 import { quest } from "@/test/factories";
 import { Dashboard } from "./dashboard";
 
@@ -26,8 +27,10 @@ vi.mock("@/client/api", () => ({
 
 beforeEach(() => {
   vi.mocked(completeQuest).mockResolvedValue(quest({ status: "completed" }));
+  vi.mocked(completeStudyBlock).mockResolvedValue({ id: "study-block-1", status: "completed" });
   vi.mocked(getGoogleStatus).mockResolvedValue({ connected: false });
   vi.mocked(listQuests).mockResolvedValue([quest({ title: "로컬 일정 먼저 표시" })]);
+  vi.mocked(listStudyPlans).mockResolvedValue([]);
   vi.mocked(reconcileSchedule).mockImplementation(() => new Promise(() => undefined));
   vi.mocked(syncGoogleCalendar).mockResolvedValue(undefined);
 });
@@ -131,3 +134,54 @@ it("restores a task when completion persistence fails", async () => {
   rejectCompletion(new Error("Save failed"));
   expect(await screen.findAllByRole("button", { name: "복구할 작업 완료" })).not.toHaveLength(0);
 });
+
+it("shows today's study blocks in Today Focus and refreshes them after completion", async () => {
+  vi.mocked(listQuests).mockResolvedValue([]);
+  vi.mocked(listStudyPlans)
+    .mockResolvedValueOnce([studyPlanView(todayString(), "pending")])
+    .mockResolvedValueOnce([studyPlanView(todayString(), "pending")])
+    .mockResolvedValue([studyPlanView(todayString(), "completed")]);
+
+  render(<Dashboard />);
+
+  expect(await screen.findByText("수학 개념학습")).toBeVisible();
+  expect(screen.getByText("오늘 계획된 학습 블록이에요")).toBeVisible();
+  fireEvent.click(screen.getAllByRole("button", { name: "수학 개념학습 완료" })[0]);
+
+  expect(completeStudyBlock).toHaveBeenCalledWith("study-block-1");
+  expect(await screen.findByText("첫 할 일을 추가해보세요.")).toBeVisible();
+});
+
+function todayString() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date());
+}
+
+function studyPlanView(date: string, status: "pending" | "completed"): StudyPlanView {
+  return {
+    id: "plan-1",
+    examName: "기말고사",
+    subject: "수학",
+    examDate: "2026-07-01",
+    scope: "1단원",
+    progress: 10,
+    difficulty: 2,
+    dailyMinutes: 60,
+    dDay: 7,
+    risk: { level: "medium", score: 70, reason: "꾸준히 진행해야 합니다." },
+    blocks: [{
+      id: "study-block-1",
+      studyPlanId: "plan-1",
+      title: "수학 개념학습",
+      date,
+      stage: "concept",
+      durationMinutes: 40,
+      sequence: 1,
+      status
+    }]
+  };
+}

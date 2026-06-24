@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { captureProductEvent } from "@/client/analytics";
 import { completeStudyBlock, createStudyPlan, listStudyPlans } from "@/client/api";
 import { StudyBlock, StudyPlanView } from "@/domain/study-plan";
 
@@ -14,7 +15,7 @@ const initialDraft = {
   dailyMinutes: 60
 };
 
-export function StudyPlanScheduler() {
+export function StudyPlanScheduler({ onChanged }: { onChanged?(): void | Promise<void> }) {
   const [plans, setPlans] = useState<StudyPlanView[]>([]);
   const [draft, setDraft] = useState(initialDraft);
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +31,14 @@ export function StudyPlanScheduler() {
     setError(null);
     try {
       const created = await createStudyPlan(draft);
+      captureProductEvent("study_plan_created", {
+        riskLevel: created.risk.level,
+        expectedMinutes: draft.dailyMinutes,
+        sourceType: "study_plan"
+      });
       setPlans((current) => [...current, created].sort((a, b) => a.examDate.localeCompare(b.examDate)));
       setDraft(initialDraft);
+      await onChanged?.();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "시험계획을 만들지 못했습니다. 입력 내용을 확인해 주세요.");
     } finally {
@@ -44,16 +51,21 @@ export function StudyPlanScheduler() {
     setPlans((current) => updateBlockStatus(current, blockId, "completed"));
     try {
       await completeStudyBlock(blockId);
+      await onChanged?.();
     } catch {
       setPlans((current) => updateBlockStatus(current, blockId, "pending"));
       setError("완료 상태를 저장하지 못했습니다. 다시 시도해 주세요.");
     }
   }
 
-  return <section className="study-planner" aria-labelledby="study-planner-title">
+  return <section className="study-planner" aria-labelledby="study-planner-title" data-testid="study-plan-scheduler">
     <div className="study-planner-heading">
       <div><p className="eyebrow">Study Plan Scheduler</p><h2 id="study-planner-title">시험 공부계획</h2></div>
       <p>시험일에서 거꾸로 계산해 오늘부터 실행할 블록을 만듭니다.</p>
+    </div>
+    <div className="study-plan-flow-copy">
+      <p>Quest는 해야 할 목표, StudyPlan은 목표를 날짜별 학습 계획으로 쪼갠 것입니다.</p>
+      <p>StudyBlock은 오늘 실제로 처리할 학습 단위이며 Today Focus에도 이어집니다.</p>
     </div>
     <form className="study-plan-form" onSubmit={submit}>
       <div className="study-plan-form-grid">

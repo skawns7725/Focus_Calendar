@@ -36,7 +36,7 @@ export function autoScheduleTodayWithReasons(input: AutoScheduleTodayInput): Tod
   const occupied = input.fixedBlocks.map(toDates).sort((a, b) => a.start.getTime() - b.start.getTime());
   const candidates = input.quests
     .filter((quest) => quest.kind === "flexible" && !quest.plannedStart && quest.status !== "completed" && quest.status !== "abandoned")
-    .sort((a, b) => Date.parse(a.deadline) - Date.parse(b.deadline) || b.importance - a.importance);
+    .sort((a, b) => Date.parse(a.deadline) - Date.parse(b.deadline) || b.importance - a.importance || a.expectedMinutes - b.expectedMinutes);
   const placements: TodayPlacement[] = [];
   const unplaced: TodayScheduleResult["unplaced"] = [];
   let scheduleCursor = notBefore;

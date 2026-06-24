@@ -24,7 +24,7 @@ it("shows today's scheduled tasks as time-ordered focus blocks", () => {
   ]);
   expect(screen.getByText("업무")).toBeVisible();
   expect(screen.getAllByText("예정")).toHaveLength(2);
-  expect(screen.getAllByText("마감일과 중요도를 기준으로 배치했습니다.")).toHaveLength(2);
+  expect(screen.getAllByText("마감일이 가까워요")).toHaveLength(2);
   fireEvent.click(screen.getByRole("button", { name: "보고서 초안 완료" }));
   expect(onComplete).toHaveBeenCalledWith("first");
 });

@@ -16,8 +16,10 @@
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
+    "@sentry/nextjs": "^10.60.0",
     "@types/web-push": "^3.6.4",
     "next": "^15.3.2",
+    "posthog-js": "^1.393.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "web-push": "^3.6.7",

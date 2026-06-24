@@ -63,6 +63,14 @@ SCHEDULER_SECRET="..."
 VAPID_SUBJECT="mailto:admin@example.com"
 VAPID_PUBLIC_KEY="..."
 VAPID_PRIVATE_KEY="..."
+## Observability And Product Analytics
+
+- Sentry is inactive unless `SENTRY_DSN` or `NEXT_PUBLIC_SENTRY_DSN` is configured.
+- Sentry events pass through a scrubber that removes authorization headers, cookies, tokens, database URLs, raw titles, notes, descriptions, locations, emails, and Google event titles.
+- To upload production source maps from Vercel, configure `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` in the deployment environment. Keep these values out of client code and do not print them in logs.
+- PostHog is inactive unless `NEXT_PUBLIC_POSTHOG_KEY` is configured.
+- PostHog events use product-safe payloads only, such as count, category, duration bucket, risk level, and source type. Do not send task titles, notes, locations, calendar event titles, descriptions, email addresses, tokens, or raw calendar details.
+
 ```
 
 Use a separate random `GOOGLE_OAUTH_STATE_SECRET` outside local development. It signs short-lived OAuth callback state.

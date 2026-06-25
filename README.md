@@ -29,6 +29,24 @@ The current Playwright specs are route-mock smoke tests. They verify UI renderin
 
 They do not verify real database persistence, authenticated owner isolation, Prisma relations, Preview or Production migration state, or the real Google OAuth flow. Run the Prisma and API checks against a safe local or Preview PostgreSQL database before treating a build as deployment-ready.
 
+### Preview Core Smoke And Google OAuth Smoke
+
+Core Preview smoke is independent from Google OAuth. It verifies login through the preview-only test route, dashboard loading, Quest creation, Today Focus ordering and explanation display, StudyPlan and StudyBlock creation, StudyBlock completion refresh, owner isolation, scheduler auth guard behavior, and 390px mobile overflow.
+
+Run it against a Vercel Preview deployment with:
+
+```bash
+PREVIEW_CORE_SMOKE_URL="https://<preview-domain>" \
+PREVIEW_TEST_LOGIN_SECRET="<preview-only-secret>" \
+npm run test:e2e:preview-core
+```
+
+The preview-only login route is available only when `VERCEL_ENV=preview`, `PREVIEW_TEST_LOGIN_ENABLED=true`, and `PREVIEW_TEST_LOGIN_SECRET` is configured. It is disabled in Production and does not print or return the secret.
+
+Google OAuth smoke is separate. It covers `/api/google/connect`, the OAuth callback, and read-only Google Calendar connection. If Google OAuth environment variables are absent in Preview, OAuth smoke should be reported as skipped or degraded, not as a Core smoke failure. Missing Google OAuth configuration must not block validation of Quest, Today Focus, StudyPlan, StudyBlock, owner isolation, or scheduler guards.
+
+Production deployment readiness is based on successful CI PostgreSQL verification, successful Core Preview smoke, and clean Preview runtime logs. OAuth feature readiness is based on the separate OAuth smoke when Google OAuth environment variables are configured.
+
 ### CI PostgreSQL Verification
 
 If local Docker or PostgreSQL is unavailable, use the `CI PostgreSQL` GitHub Actions workflow. It starts a disposable PostgreSQL service database and sets:

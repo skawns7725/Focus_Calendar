@@ -93,7 +93,7 @@ test("runs core product smoke without Google OAuth", async ({ page, request }) =
   await studyBlockFocusItem.locator("button").click();
   await expect(page.getByTestId("today-focus-item").filter({ hasText: studyBlock.title })).toHaveCount(0);
 
-  const cronResponse = await request.get(`${previewUrl}/api/schedule/reconcile`);
+  const cronResponse = await fetch(`${previewUrl}/api/schedule/reconcile`, { headers: protectionHeaders() });
   expect(cronResponse.status()).toBe(401);
 
   await page.goto("/settings");

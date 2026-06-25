@@ -18,7 +18,11 @@ export async function POST(request: Request) {
   }
 
   const identity = createPreviewTestUserIdentity();
-  const user = await new UserRepository().upsertPreviewTestUser(identity);
+  const user = await new UserRepository().upsertPreviewTestUser({
+    id: identity.id,
+    googleSubject: identity.googleSubject,
+    email: identity.email
+  });
   const token = await new SessionRepository().create(user.id);
   const response = NextResponse.json({
     ok: true,

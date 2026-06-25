@@ -100,6 +100,8 @@ describe("preview test login route", () => {
       id: expect.stringMatching(/^preview-smoke-/),
       email: expect.stringContaining("@focus-calendar.preview.test")
     }));
+    expect(loginMocks.upsertPreviewTestUser.mock.calls[0]?.[0]).not.toHaveProperty("createdFor");
+    expect(loginMocks.upsertPreviewTestUser.mock.calls[0]?.[0]).not.toHaveProperty("createdAt");
     expect(loginMocks.createSession).toHaveBeenCalledWith("preview-smoke-owner");
   });
 

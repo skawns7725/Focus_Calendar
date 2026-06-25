@@ -6,6 +6,11 @@ const loginMocks = vi.hoisted(() => ({
   upsertPreviewTestUser: vi.fn(async () => ({ id: "preview-smoke-owner" }))
 }));
 
+const observabilityMocks = vi.hoisted(() => ({
+  captureServerError: vi.fn(),
+  captureProductEvent: vi.fn()
+}));
+
 vi.mock("@/server/auth/session-repository", () => ({
   SessionRepository: class {
     create = loginMocks.createSession;
@@ -20,6 +25,12 @@ vi.mock("@/server/auth/user-repository", () => ({
 
 vi.mock("@/server/auth/cookies", () => ({
   serializeSessionCookie: vi.fn(() => "focus_session=session-token; Path=/; HttpOnly; SameSite=Lax; Secure")
+}));
+vi.mock("@/server/observability/sentry", () => ({
+  captureServerError: observabilityMocks.captureServerError
+}));
+vi.mock("@/client/analytics", () => ({
+  captureProductEvent: observabilityMocks.captureProductEvent
 }));
 
 describe("preview test login route", () => {
@@ -83,6 +94,8 @@ describe("preview test login route", () => {
     expect(response.headers.get("set-cookie")).toContain("focus_session=");
     expect(body).toEqual({ ok: true, ownerKind: "preview-test", createdFor: "preview-core-smoke" });
     expect(JSON.stringify(body)).not.toContain("correct-secret");
+    expect(observabilityMocks.captureServerError).not.toHaveBeenCalled();
+    expect(observabilityMocks.captureProductEvent).not.toHaveBeenCalled();
     expect(loginMocks.upsertPreviewTestUser).toHaveBeenCalledWith(expect.objectContaining({
       id: expect.stringMatching(/^preview-smoke-/),
       email: expect.stringContaining("@focus-calendar.preview.test")

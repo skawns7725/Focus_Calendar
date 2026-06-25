@@ -9,6 +9,14 @@ export class UserRepository {
     });
   }
 
+  upsertPreviewTestUser(input: { id: string; googleSubject: string; email: string }) {
+    return db.user.upsert({
+      where: { googleSubject: input.googleSubject },
+      create: input,
+      update: { email: input.email }
+    });
+  }
+
   get(ownerId: string) {
     return db.user.findUnique({ where: { id: ownerId } });
   }

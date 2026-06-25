@@ -3,6 +3,7 @@ import { GET } from "./route";
 
 const googleAuthMocks = vi.hoisted(() => ({
   buildGoogleAuthorizationUrl: vi.fn(() => "https://accounts.google.example/oauth"),
+  isGoogleConfigured: vi.fn(() => true),
   requireEnv: vi.fn(() => "configured"),
   getGoogleRedirectUri: vi.fn(() => "https://focus-calendar.example/api/google/callback"),
   getGoogleOAuthStateSecret: vi.fn(() => "state-secret")
@@ -30,5 +31,15 @@ it("blocks Google Calendar write authorization unless the write feature flag is 
 
   expect(response.status).toBe(403);
   expect(await response.json()).toEqual({ error: "Google Calendar write sync is disabled" });
+  expect(googleAuthMocks.buildGoogleAuthorizationUrl).not.toHaveBeenCalled();
+});
+
+it("redirects to settings guidance when Google OAuth is unavailable", async () => {
+  googleAuthMocks.isGoogleConfigured.mockReturnValue(false);
+
+  const response = await GET(new Request("https://focus-calendar.example/api/google/connect?mode=read"));
+
+  expect(response.status).toBe(307);
+  expect(response.headers.get("location")).toBe("https://focus-calendar.example/settings?google=unavailable");
   expect(googleAuthMocks.buildGoogleAuthorizationUrl).not.toHaveBeenCalled();
 });

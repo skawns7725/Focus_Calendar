@@ -84,4 +84,20 @@ describe("settings page", () => {
     render(<SettingsPage />);
     expect(await screen.findByText("Google Calendar 연결을 완료하지 못했습니다. 다시 연결해 주세요.")).toBeVisible();
   });
+
+  it("explains that missing Preview OAuth does not block core smoke", async () => {
+    vi.mocked(getGoogleStatus).mockResolvedValueOnce({
+      configured: false,
+      connected: false,
+      dedicatedCalendarId: null,
+      writeEnabled: false,
+      lastSyncedAt: null,
+      lastSyncError: null
+    });
+    window.history.replaceState({}, "", "/settings?google=unavailable");
+
+    render(<SettingsPage />);
+
+    expect(await screen.findByText("Google Calendar connection unavailable in this environment. Preview OAuth env is not configured, so Core app smoke is still available without Google OAuth.")).toBeVisible();
+  });
 });

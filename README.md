@@ -49,6 +49,68 @@ Google OAuth smoke is separate. It covers `/api/google/connect`, the OAuth callb
 
 Production deployment readiness is based on successful CI PostgreSQL verification, successful Core Preview smoke, and clean Preview runtime logs. OAuth feature readiness is based on the separate OAuth smoke when Google OAuth environment variables are configured.
 
+### Current Production Approval Evidence
+
+Use this record as the pre-deploy evidence for the `codex/quest-calendar-local-mvp` branch at `768ef52`.
+
+- CI PostgreSQL passed against a disposable PostgreSQL service. The workflow applied migrations to the CI service database only, ran `npm run db:validate`, `npm run db:migrate:status`, `npm test`, `npm run build`, route-mock Playwright E2E, and `git diff --check`.
+- Vercel Preview build passed for `https://focus-calendar-5upzmmsye-skawns31-gmailcoms-projects.vercel.app`.
+- Preview build command was `prisma generate && next build`.
+- Preview build logs showed no `prisma db push`, `prisma migrate deploy`, `prisma migrate reset`, or `prisma migrate resolve`.
+- Preview Core smoke passed with `1 passed`. It verified preview test login, dashboard load, Quest creation, Today Focus reflection, recommendation reason, expected time, category sorting, StudyPlan creation, StudyBlock display, StudyBlock completion refresh, owner isolation, Settings read-only OAuth copy, cron endpoint `401` without secret, and no 390px horizontal overflow.
+- Preview runtime logs had no final `error`, `warning`, or `fatal` entries, and `/api/test/login` did not show a recurring `500`.
+- Preview and Production database URLs were confirmed to be separate by value comparison. Do not record either value.
+- Vercel Deployment Protection bypass for automation exists and was used only as a smoke-test access mechanism. The bypass secret value must not be written to git, README, CI output, test snapshots, issue comments, or deployment logs.
+- `PREVIEW_TEST_LOGIN_SECRET` belongs to Preview smoke only. Keep it scoped to Preview automation and never copy it into Production.
+- Google OAuth smoke is degraded or skipped until OAuth is validated separately. This does not block Core deployment readiness, but it does mean Google Calendar conflict avoidance is not fully production-verified until the separate OAuth checklist passes.
+
+### Production Pre-Deploy Checklist
+
+- Confirm the release commit is the same commit that passed CI PostgreSQL and Preview Core smoke.
+- Confirm CI PostgreSQL is green for that commit and used a disposable PostgreSQL service.
+- Confirm Preview deployment is `READY` for that commit.
+- Confirm Preview build logs include `prisma generate` and `next build`.
+- Confirm Preview build logs do not include `prisma db push`, `prisma migrate deploy`, `prisma migrate reset`, or `prisma migrate resolve`.
+- Confirm Preview runtime logs have no Prisma, Next.js, Sentry, PostHog, scheduler, or test-login runtime errors.
+- Confirm Preview Core smoke passed after any Deployment Protection bypass was supplied by automation.
+- Confirm Preview test login and Vercel bypass secrets are not present in Production scope.
+- Confirm no secret values appear in README, commit messages, CI logs, test snapshots, issue comments, or application logs.
+- Confirm Google OAuth smoke status is recorded separately as `passed`, `skipped`, or `degraded`.
+- Do not treat skipped or degraded OAuth smoke as a Core deployment blocker, but do treat it as a blocker for declaring Google Calendar conflict avoidance fully verified.
+
+### Production Post-Deploy Smoke Checklist
+
+Run this immediately after a separately approved Production deployment. Do not use Preview test-login or Preview bypass secrets in Production.
+
+- Production dashboard loads over HTTPS.
+- Login or hosted authentication flow succeeds.
+- Quest creation succeeds and the created item is visible only to the signed-in owner.
+- Today Focus reflects the created Quest.
+- Today Focus displays recommendation reason, expected time, and category-aware ordering.
+- StudyPlan creation succeeds.
+- StudyBlock is displayed after StudyPlan creation.
+- Completing a StudyBlock refreshes Today Focus.
+- Owner isolation holds: another account cannot see the first account's Quest, Today Focus item, StudyPlan, StudyBlock, settings, or synced calendar records.
+- Settings shows read-only Google Calendar guidance when Google write sync is not enabled.
+- Cron endpoints return `401` without the scheduler secret.
+- A 390px mobile viewport has no horizontal overflow.
+- Production runtime logs show no Prisma, Next.js, Sentry, PostHog, scheduler, auth, or cron `error`, `warning`, or `fatal` entries after the smoke run.
+- If any smoke item fails, stop promotion follow-up work, record the failing step, check runtime logs, and separate environment/setup failures from code regressions.
+
+### Separate Google OAuth Smoke Checklist
+
+Google OAuth smoke is a separate validation track. It is required before declaring Google Calendar conflict avoidance fully verified, but it does not block Core deployment readiness when the Core smoke has passed.
+
+- Confirm `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_OAUTH_STATE_SECRET`, and `GOOGLE_TOKEN_ENCRYPTION_KEY` exist in the intended Production scope. Do not record values.
+- Confirm `GOOGLE_REDIRECT_URI` matches the Production callback URL exactly: `https://<production-domain>/api/google/callback`.
+- Confirm the same Production callback URL is registered as an authorized redirect URI in the Google OAuth client.
+- Confirm the OAuth request uses identity scopes and read-only Google Calendar access for the default connection.
+- Confirm `/api/google/connect` starts the OAuth flow when configuration is present.
+- Confirm OAuth callback signs in the user, stores tokens under the correct owner, and returns to Settings or Dashboard without exposing token details.
+- Confirm imported Google Calendar events are read-only busy blocks and are not editable as Focus Calendar tasks unless explicitly converted.
+- Confirm missing or invalid OAuth configuration falls back to a clear unavailable state instead of a raw server error, and Core app smoke remains available.
+- Confirm Google write sync remains hidden or read-only unless its feature flag is explicitly enabled.
+
 ### CI PostgreSQL Verification
 
 If local Docker or PostgreSQL is unavailable, use the `CI PostgreSQL` GitHub Actions workflow. It starts a disposable PostgreSQL service database and sets:

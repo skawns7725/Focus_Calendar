@@ -4,7 +4,8 @@ const separatelyAuthorizedApiPaths = [
   "/api/auth/",
   "/api/google/connect",
   "/api/google/callback",
-  "/api/notifications/dispatch"
+  "/api/notifications/dispatch",
+  "/api/test/login"
 ];
 
 export function middleware(request: NextRequest) {

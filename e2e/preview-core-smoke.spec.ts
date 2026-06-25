@@ -74,11 +74,11 @@ test("runs core product smoke without Google OAuth", async ({ page, request }) =
 
   await page.goto("/");
   await expect(page.getByTestId("today-focus")).toBeVisible();
-  await expect(page.getByText(studyQuestTitle)).toBeVisible();
-  await expect(page.getByText(workQuestTitle)).toBeVisible();
-  await expect(page.getByText(otherQuestTitle)).toHaveCount(0);
 
   const focusItems = page.getByTestId("today-focus-item");
+  await expect(focusItems.filter({ hasText: studyQuestTitle }).first()).toBeVisible();
+  await expect(focusItems.filter({ hasText: workQuestTitle }).first()).toBeVisible();
+  await expect(page.getByText(otherQuestTitle)).toHaveCount(0);
   await expect(focusItems.first()).toContainText(studyQuestTitle);
   const studyQuestItem = focusItems.filter({ hasText: studyQuestTitle }).first();
   await expect(studyQuestItem.locator("span").nth(0)).toContainText("20");

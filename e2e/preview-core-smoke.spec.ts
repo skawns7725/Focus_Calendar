@@ -104,7 +104,7 @@ async function previewLogin(request: APIRequestContext) {
     headers: { authorization: `Bearer ${previewSecret}` }
   });
   expect(response.status()).toBe(200);
-  const setCookie = response.headers()["set-cookie"] ?? "";
+  const setCookie = response.headersArray().find((header) => header.name.toLowerCase() === "set-cookie")?.value ?? "";
   const cookie = setCookie.split(";")[0];
   expect(cookie).toMatch(/^focus_session=/);
   return cookie;

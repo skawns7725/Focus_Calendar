@@ -2,12 +2,16 @@ import { APIRequestContext, expect, Page, test } from "@playwright/test";
 
 const previewUrl = process.env.PREVIEW_CORE_SMOKE_URL;
 const previewSecret = process.env.PREVIEW_TEST_LOGIN_SECRET;
+const protectionBypass = process.env.VERCEL_PROTECTION_BYPASS_SECRET;
 
 test.use({ viewport: { width: 390, height: 844 } });
 
 test.skip(!previewUrl || !previewSecret, "Preview core smoke requires PREVIEW_CORE_SMOKE_URL and PREVIEW_TEST_LOGIN_SECRET.");
 
 test("runs core product smoke without Google OAuth", async ({ page, request }) => {
+  if (protectionBypass) {
+    await page.setExtraHTTPHeaders(protectionHeaders());
+  }
   const primaryCookie = await previewLogin(request);
   await installSessionCookie(page, primaryCookie);
 
@@ -101,13 +105,15 @@ test("runs core product smoke without Google OAuth", async ({ page, request }) =
 
 async function previewLogin(request: APIRequestContext) {
   const response = await request.post(`${previewUrl}/api/test/login`, {
-    headers: { authorization: `Bearer ${previewSecret}` }
+    headers: { authorization: `Bearer ${previewSecret}`, ...protectionHeaders() }
   });
   expect(response.status()).toBe(200);
-  const setCookie = response.headersArray().find((header) => header.name.toLowerCase() === "set-cookie")?.value ?? "";
-  const cookie = setCookie.split(";")[0];
-  expect(cookie).toMatch(/^focus_session=/);
-  return cookie;
+  const session = (await request.storageState()).cookies.find((cookie) => cookie.name === "focus_session");
+  if (!session?.value) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Preview test login did not return a focus_session cookie. If this Preview is protected, set VERCEL_PROTECTION_BYPASS_SECRET for the smoke run. Response started with: ${body.slice(0, 80)}`);
+  }
+  return `focus_session=${encodeURIComponent(session!.value)}`;
 }
 
 async function installSessionCookie(page: Page, cookie: string) {
@@ -127,11 +133,15 @@ async function installSessionCookie(page: Page, cookie: string) {
 async function api(request: APIRequestContext, cookie: string, method: "GET" | "POST", path: string, data?: unknown) {
   const response = await request.fetch(`${previewUrl}${path}`, {
     method,
-    headers: { cookie, "content-type": "application/json" },
+    headers: { cookie, "content-type": "application/json", ...protectionHeaders() },
     data
   });
   expect(response.ok()).toBeTruthy();
   return response.json();
+}
+
+function protectionHeaders() {
+  return protectionBypass ? { "x-vercel-protection-bypass": protectionBypass } : {};
 }
 
 function koreaToday() {

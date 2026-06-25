@@ -41,6 +41,8 @@ PREVIEW_TEST_LOGIN_SECRET="<preview-only-secret>" \
 npm run test:e2e:preview-core
 ```
 
+If Vercel Deployment Protection is enabled for the Preview URL, also provide `VERCEL_PROTECTION_BYPASS_SECRET` to the smoke run. Do not reuse Production secrets for this value.
+
 The preview-only login route is available only when `VERCEL_ENV=preview`, `PREVIEW_TEST_LOGIN_ENABLED=true`, and `PREVIEW_TEST_LOGIN_SECRET` is configured. It is disabled in Production and does not print or return the secret.
 
 Google OAuth smoke is separate. It covers `/api/google/connect`, the OAuth callback, and read-only Google Calendar connection. If Google OAuth environment variables are absent in Preview, OAuth smoke should be reported as skipped or degraded, not as a Core smoke failure. Missing Google OAuth configuration must not block validation of Quest, Today Focus, StudyPlan, StudyBlock, owner isolation, or scheduler guards.

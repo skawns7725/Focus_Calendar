@@ -21,19 +21,19 @@ export interface TodayFocusItem {
   sequence?: number;
 }
 
-export function buildTodayFocusItems(_input: {
+export function buildTodayFocusItems(input: {
   quests: Quest[];
   studyBlocks?: StudyBlock[];
   today: string;
   now?: Date;
   timeZone?: string;
 }): TodayFocusItem[] {
-  const timeZone = _input.timeZone ?? "Asia/Seoul";
-  const questItems = _input.quests
+  const timeZone = input.timeZone ?? "Asia/Seoul";
+  const questItems = input.quests
     .filter((quest) => quest.plannedStart
       && quest.status !== "completed"
       && quest.status !== "abandoned"
-      && toLocalDate(new Date(quest.plannedStart), timeZone) === _input.today)
+      && toLocalDate(new Date(quest.plannedStart), timeZone) === input.today)
     .map((quest): TodayFocusItem => ({
       sourceType: "quest",
       id: quest.id,
@@ -41,14 +41,14 @@ export function buildTodayFocusItems(_input: {
       expectedMinutes: quest.expectedMinutes,
       category: quest.category,
       status: quest.status,
-      reason: questReason(quest, _input.today),
+      reason: questReason(quest, input.today, timeZone),
       sortTime: quest.plannedStart,
       displayTime: quest.plannedStart,
       importance: quest.importance,
       deadline: quest.deadline
     }));
-  const studyItems = (_input.studyBlocks ?? [])
-    .filter((block) => block.date === _input.today && block.status === "pending")
+  const studyItems = (input.studyBlocks ?? [])
+    .filter((block) => block.date === input.today && block.status === "pending")
     .map((block): TodayFocusItem => ({
       sourceType: "study_block",
       id: block.id,
@@ -90,10 +90,10 @@ function categoryPriority(category: Quest["category"]) {
           : 0;
 }
 
-function questReason(quest: Quest, today: string) {
-  const deadlineDate = toLocalDate(new Date(quest.deadline), "Asia/Seoul");
+function questReason(quest: Quest, today: string, timeZone: string) {
+  const deadlineDate = toLocalDate(new Date(quest.deadline), timeZone);
   if (deadlineDate <= today) return "마감일이 가까워요";
   if (quest.importance === 3) return "중요도가 높아요";
   if (quest.expectedMinutes <= 25) return "예상 시간이 짧아 지금 처리하기 좋아요";
-  return "오늘 빈 시간에 자동 배치됐어요";
+  return "오늘 빈 시간에 자동 배치되었어요";
 }

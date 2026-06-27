@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.use({ viewport: { width: 390, height: 844 } });
 
-test("keeps focus blocks and study plans within the mobile viewport", async ({ page }) => {
+test("keeps Today Focus, schedule changes, and collapsed study plans within the mobile viewport", async ({ page }) => {
   const plannedStart = new Date();
   const deadline = new Date(plannedStart.getTime() + 24 * 60 * 60_000).toISOString();
   const quests = [
@@ -16,17 +16,32 @@ test("keeps focus blocks and study plans within the mobile viewport", async ({ p
   }));
   await page.route("**/api/google/status", (route) => route.fulfill({ json: { connected: false } }));
   await page.route("**/api/push/status", (route) => route.fulfill({ json: { configured: false, notificationPromptCompleted: true } }));
-  await page.route("**/api/notifications", (route) => route.fulfill({ json: [] }));
-  await page.route("**/api/study-plans", (route) => route.fulfill({ json: [studyPlan(plannedStart)] }));
+  await page.route("**/api/notifications", (route) => route.fulfill({
+    json: [{ id: "notification-1", kind: "carryover", questId: "unplaced", message: "미완료 항목을 오늘로 이월했습니다." }]
+  }));
+  await page.route("**/api/study-plans", (route) => route.fulfill({ json: [studyPlan(plannedStart, 10)] }));
 
   await page.goto("/");
 
   const focusBlocks = page.getByTestId("today-focus");
+  const changePanel = page.getByTestId("schedule-change-panel");
+  const studyPlanner = page.getByTestId("study-plan-scheduler");
   await expect(focusBlocks).toBeVisible();
-  await expect(focusBlocks.getByTestId("today-focus-item")).toHaveCount(2);
-  await expect(page.getByTestId("study-plan-scheduler")).toBeVisible();
-  expect(await focusBlocks.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBeTruthy();
+  await expect(focusBlocks.getByTestId("current-focus-card")).toBeVisible();
+  await expect(changePanel).toBeVisible();
+  await expect(studyPlanner).toBeVisible();
+  await expect(page.getByTestId("study-block-item")).toHaveCount(3);
+
+  const focusBox = await focusBlocks.boundingBox();
+  const changeBox = await changePanel.boundingBox();
+  const studyBox = await studyPlanner.boundingBox();
+  expect(focusBox?.y ?? 9999).toBeLessThan(changeBox?.y ?? 0);
+  expect(changeBox?.y ?? 9999).toBeLessThan(studyBox?.y ?? 0);
+  expect(changeBox?.y ?? 9999).toBeLessThan(844 * 1.5);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+
+  await page.getByRole("button", { name: "전체 계획 보기" }).click();
+  await expect(page.getByTestId("study-block-item")).toHaveCount(10);
 });
 
 function task(input: { id: string; title: string; plannedStart: string | null; deadline: string; expectedMinutes?: number }) {
@@ -45,7 +60,7 @@ function task(input: { id: string; title: string; plannedStart: string | null; d
   };
 }
 
-function studyPlan(now: Date) {
+function studyPlan(now: Date, count: number) {
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Seoul",
     year: "numeric",
@@ -64,15 +79,15 @@ function studyPlan(now: Date) {
     dailyMinutes: 60,
     dDay: 7,
     risk: { level: "medium", score: 70, reason: "꾸준히 진행해야 합니다." },
-    blocks: [{
-      id: "study-block-mobile",
+    blocks: Array.from({ length: count }, (_, index) => ({
+      id: `study-block-mobile-${index + 1}`,
       studyPlanId: "study-plan-mobile",
-      title: "모바일 학습 블록",
+      title: `모바일 학습 블록 ${index + 1}`,
       date: today,
-      stage: "concept",
+      stage: index % 2 === 0 ? "concept" : "practice",
       durationMinutes: 30,
-      sequence: 1,
+      sequence: index + 1,
       status: "pending"
-    }]
+    }))
   };
 }

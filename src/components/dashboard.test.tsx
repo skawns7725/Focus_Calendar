@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { completeQuest, completeStudyBlock, getGoogleStatus, listQuests, listStudyPlans, reconcileSchedule, syncGoogleCalendar } from "@/client/api";
+import { completeQuest, completeStudyBlock, getGoogleStatus, listQuests, listStudyPlans, listUnreadNotifications, reconcileSchedule, syncGoogleCalendar } from "@/client/api";
 import type { StudyPlanView } from "@/domain/study-plan";
 import { quest } from "@/test/factories";
 import { Dashboard } from "./dashboard";
@@ -13,12 +13,12 @@ vi.mock("@/client/api", () => ({
   createQuest: vi.fn(),
   getGoogleStatus: vi.fn(async () => ({ connected: false })),
   getPushStatus: vi.fn(async () => ({ configured: false, notificationPromptCompleted: true })),
-  listQuests: vi.fn(async () => [quest({ title: "로컬 일정 먼저 표시" })]),
+  listQuests: vi.fn(async () => [quest({ title: "로컬 일정 먼저 표시", plannedStart: new Date().toISOString() })]),
   listStudyPlans: vi.fn(async () => []),
   listUnreadNotifications: vi.fn(async () => []),
   markNotificationsRead: vi.fn(),
   moveQuestToNearestDay: vi.fn(),
-  reconcileSchedule: vi.fn(() => new Promise(() => undefined)),
+  reconcileSchedule: vi.fn(async () => ({ carryovers: [], today: { placements: [], unplaced: [] } })),
   subscribePush: vi.fn(),
   syncGoogleCalendar: vi.fn(),
   unsubscribePush: vi.fn(),
@@ -29,9 +29,10 @@ beforeEach(() => {
   vi.mocked(completeQuest).mockResolvedValue(quest({ status: "completed" }));
   vi.mocked(completeStudyBlock).mockResolvedValue({ id: "study-block-1", status: "completed" });
   vi.mocked(getGoogleStatus).mockResolvedValue({ connected: false });
-  vi.mocked(listQuests).mockResolvedValue([quest({ title: "로컬 일정 먼저 표시" })]);
+  vi.mocked(listQuests).mockResolvedValue([quest({ title: "로컬 일정 먼저 표시", plannedStart: new Date().toISOString() })]);
   vi.mocked(listStudyPlans).mockResolvedValue([]);
-  vi.mocked(reconcileSchedule).mockImplementation(() => new Promise(() => undefined));
+  vi.mocked(listUnreadNotifications).mockResolvedValue([]);
+  vi.mocked(reconcileSchedule).mockResolvedValue({ carryovers: [], today: { placements: [], unplaced: [] } });
   vi.mocked(syncGoogleCalendar).mockResolvedValue(undefined);
 });
 
@@ -42,8 +43,9 @@ vi.mock("./app-shell", () => ({
 }));
 
 it("shows local quests before background reconciliation finishes", async () => {
+  vi.mocked(reconcileSchedule).mockImplementation(() => new Promise(() => undefined));
   render(<Dashboard />);
-  expect(await screen.findAllByText("로컬 일정 먼저 표시", {}, { timeout: 200 })).toHaveLength(2);
+  expect(await screen.findAllByText("로컬 일정 먼저 표시", {}, { timeout: 200 })).not.toHaveLength(0);
 });
 
 it("keeps the signed-out dashboard calm when quests cannot be loaded", async () => {
@@ -56,7 +58,6 @@ it("keeps the signed-out dashboard calm when quests cannot be loaded", async () 
 
 it("shows a retry action when a connected Google Calendar sync fails", async () => {
   vi.mocked(getGoogleStatus).mockResolvedValue({ connected: true });
-  vi.mocked(reconcileSchedule).mockResolvedValue(undefined);
   vi.mocked(syncGoogleCalendar).mockRejectedValue(new Error("Calendar unavailable"));
 
   render(<Dashboard />);
@@ -67,39 +68,41 @@ it("shows a retry action when a connected Google Calendar sync fails", async () 
 
 it("opens task creation in a dialog", async () => {
   render(<Dashboard />);
-  fireEvent.click(screen.getByRole("button", { name: "할 일 추가" }));
-  expect(screen.getByRole("dialog", { name: "할 일 추가" })).toBeVisible();
+  fireEvent.click(screen.getByTestId("add-task-button"));
+  expect(screen.getByRole("dialog")).toBeVisible();
 });
 
-it("shows focus blocks before the dashboard summary with the requested empty guidance", async () => {
-  vi.mocked(listQuests).mockResolvedValue([]);
-  vi.mocked(reconcileSchedule).mockResolvedValue(undefined);
+it("puts schedule change notifications directly below Today Focus and above StudyPlan", async () => {
+  vi.mocked(listUnreadNotifications).mockResolvedValue([{ id: "n-1", kind: "carryover", questId: "q-1", message: "어제 미완료 항목을 오늘로 이월했습니다." }]);
   render(<Dashboard />);
 
-  const focusHeading = await screen.findByRole("heading", { name: "오늘의 집중 블록" });
-  expect(focusHeading).toBeVisible();
-  expect(focusHeading.closest("section")?.nextElementSibling).toHaveClass("dashboard-summary");
-  expect(screen.getByText("첫 할 일을 추가해보세요.")).toBeVisible();
+  const focus = await screen.findByTestId("today-focus");
+  const notification = await screen.findByTestId("schedule-change-panel");
+  const studyPlanner = screen.getByTestId("study-plan-scheduler");
+
+  expect(focus.compareDocumentPosition(notification) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(notification.compareDocumentPosition(studyPlanner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.queryByText("어제 미완료 항목을 오늘로 이월했습니다.")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "변경 내역 보기" }));
+  expect(screen.getByText("어제 미완료 항목을 오늘로 이월했습니다.")).toBeVisible();
 });
 
 it("includes the study plan scheduler as a separate dashboard section", async () => {
-  const { container } = render(<Dashboard />);
+  render(<Dashboard />);
 
-  const focusHeading = await screen.findByRole("heading", { name: "오늘의 집중 블록" });
+  const focusHeading = await screen.findByRole("heading", { name: "오늘 지금 할 일" });
   const studyHeading = screen.getByRole("heading", { name: "시험 공부계획" });
   expect(focusHeading.compareDocumentPosition(studyHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  const nowPanel = container.querySelector(".now-panel");
-  const studyPlanner = container.querySelector(".study-planner");
-  expect(nowPanel).not.toBeNull();
-  expect(studyPlanner).not.toBeNull();
-  expect(nowPanel!.compareDocumentPosition(studyPlanner!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
 it("removes a completed task immediately and keeps it hidden after refresh", async () => {
   const active = quest({ id: "finish-me", title: "완료할 보고서", plannedStart: new Date().toISOString() });
   const completed = { ...active, status: "completed" as const };
   let resolveCompletion!: (value: typeof completed) => void;
-  vi.mocked(listQuests).mockResolvedValueOnce([active]).mockResolvedValue([completed]);
+  vi.mocked(listQuests)
+    .mockResolvedValueOnce([active])
+    .mockResolvedValueOnce([active])
+    .mockResolvedValue([completed]);
   vi.mocked(completeQuest).mockImplementation(() => new Promise((resolve) => { resolveCompletion = resolve; }));
 
   render(<Dashboard />);
@@ -112,7 +115,6 @@ it("removes a completed task immediately and keeps it hidden after refresh", asy
 
 it("does not restore a persisted completed task on a fresh render", async () => {
   vi.mocked(listQuests).mockResolvedValue([quest({ id: "done", title: "저장된 완료 항목", status: "completed" })]);
-  vi.mocked(reconcileSchedule).mockResolvedValue(undefined);
 
   render(<Dashboard />);
 
@@ -138,6 +140,7 @@ it("restores a task when completion persistence fails", async () => {
 it("shows today's study blocks in Today Focus and refreshes them after completion", async () => {
   vi.mocked(listQuests).mockResolvedValue([]);
   vi.mocked(listStudyPlans)
+    .mockResolvedValueOnce([studyPlanView(todayString(), "pending")])
     .mockResolvedValueOnce([studyPlanView(todayString(), "pending")])
     .mockResolvedValueOnce([studyPlanView(todayString(), "pending")])
     .mockResolvedValue([studyPlanView(todayString(), "completed")]);

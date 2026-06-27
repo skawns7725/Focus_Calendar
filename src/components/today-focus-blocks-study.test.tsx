@@ -22,19 +22,21 @@ it("shows today's pending study blocks with a study-specific recommendation reas
   expect(onCompleteStudyBlock).toHaveBeenCalledWith("study-block-1");
 });
 
-it("summarizes recommended, completed, and remaining focus minutes with the next recommendation", () => {
+it("summarizes recommended, completed, remaining, and available focus minutes with the next recommendation", () => {
   render(<TodayFocusBlocks
     quests={[]}
     studyBlocks={[
-      studyBlock({ id: "done", title: "완료한 복습", durationMinutes: 30, status: "completed" }),
+      studyBlock({ id: "done", title: "완료된 복습", durationMinutes: 30, status: "completed" }),
       studyBlock({ id: "next", title: "다음 문제풀이", durationMinutes: 45, status: "pending", sequence: 2 })
     ]}
     now={new Date("2026-06-24T01:00:00.000Z")}
     timeZone="Asia/Seoul"
+    availableMinutes={90}
     onComplete={() => undefined}
   />);
 
-  expect(screen.getByText("오늘 추천 학습량: 75분")).toBeVisible();
+  expect(screen.getByText("오늘 추천 총 소요 시간: 75분")).toBeVisible();
+  expect(screen.getByText("추천 기준 시간: 90분")).toBeVisible();
   expect(screen.getByText("완료: 30분 / 남은 계획: 45분")).toBeVisible();
   expect(screen.getByText("우선 기준: 마감일 + 중요도 + 예상 시간")).toBeVisible();
   expect(screen.getByText("다음 추천: 다음 문제풀이")).toBeVisible();

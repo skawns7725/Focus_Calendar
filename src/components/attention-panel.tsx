@@ -23,12 +23,12 @@ export function AttentionPanel({ notifications, onRead }: { notifications: Displ
           <p>{notifications.length}개의 변경이 있어요. 오늘 순서가 바뀌었을 수 있습니다.</p>
         </div>
         <div className="attention-actions">
-          <button type="button" onClick={() => setExpanded((open) => !open)}>{expanded ? "변경 내역 접기" : "변경 내역 보기"}</button>
+          <button type="button" aria-controls="schedule-change-details" aria-expanded={expanded} onClick={() => setExpanded((open) => !open)}>{expanded ? "변경 내역 접기" : "변경 내역 보기"}</button>
           <button type="button" onClick={() => onRead(notifications.map((notification) => notification.id))}>확인</button>
         </div>
       </div>
       {expanded && (
-        <ul className="attention-details" data-testid="schedule-change-details">
+        <ul className="attention-details" data-testid="schedule-change-details" id="schedule-change-details">
           {notifications.map((notification) => <li key={notification.id}>{notification.message}</li>)}
         </ul>
       )}

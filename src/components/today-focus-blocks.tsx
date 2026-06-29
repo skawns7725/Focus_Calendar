@@ -17,6 +17,8 @@ interface TodayFocusBlocksProps {
   timeZone?: string;
   unplacedReasons?: Partial<Record<string, UnplacedReason>>;
   availableMinutes?: number;
+  calendarSyncWarning?: string | null;
+  scheduleChangeCount?: number;
 }
 
 export function TodayFocusBlocks({
@@ -28,7 +30,9 @@ export function TodayFocusBlocks({
   now = new Date(),
   timeZone = "Asia/Seoul",
   unplacedReasons = {},
-  availableMinutes
+  availableMinutes,
+  calendarSyncWarning,
+  scheduleChangeCount = 0
 }: TodayFocusBlocksProps) {
   const today = toLocalDate(now, timeZone);
   const blocks = buildTodayFocusItems({ quests, studyBlocks, today, now, timeZone });
@@ -38,7 +42,7 @@ export function TodayFocusBlocks({
   const completedMinutes = completedFocusMinutes(quests, studyBlocks, today, timeZone);
   const remainingMinutes = blocks.reduce((total, item) => total + item.expectedMinutes, 0);
   const recommendedMinutes = completedMinutes + remainingMinutes;
-  const todayAvailableMinutes = availableMinutes ?? Math.max(remainingMinutes, recommendedMinutes);
+  const conflictLimited = Boolean(calendarSyncWarning);
 
   useEffect(() => {
     captureProductEvent("today_focus_viewed", {
@@ -64,12 +68,30 @@ export function TodayFocusBlocks({
         <p>Quest와 StudyBlock을 마감일, 중요도, 예상 시간 기준으로 골라 지금 처리할 순서만 보여줍니다.</p>
       </div>
       <div className="focus-summary" aria-label="오늘 집중 요약">
-        <span>오늘 추천 총 소요 시간: {recommendedMinutes}분</span>
-        <span data-testid="today-available-minutes">추천 기준 시간: {todayAvailableMinutes}분</span>
-        <span>완료: {completedMinutes}분 / 남은 계획: {remainingMinutes}분</span>
+        <span>{`추천 작업 합계: ${recommendedMinutes}분`}</span>
+        <span>{`완료: ${completedMinutes}분`}</span>
+        <span>{`남은 계획: ${remainingMinutes}분`}</span>
+        <span data-testid="today-available-minutes">{availableMinutes === undefined ? `오늘 가용 시간: ${conflictLimited ? "확인 제한" : "미설정"}` : `오늘 가용 시간: ${availableMinutes}분`}</span>
+        <span>{`충돌 판단: ${conflictLimited ? "제한됨" : "가능"}`}</span>
         <span>우선 기준: 마감일 + 중요도 + 예상 시간</span>
         {blocks[0] && <strong>다음 추천: {blocks[0].title}</strong>}
       </div>
+      {(calendarSyncWarning || scheduleChangeCount > 0) && (
+        <div className="focus-impact-alerts" aria-label="오늘 실행 판단 경고">
+          {scheduleChangeCount > 0 && (
+            <div className="focus-impact-alert focus-impact-alert-warning" role="status">
+              <strong>{`오늘 일정 변경 ${scheduleChangeCount}건 있음`}</strong>
+              <span>변경된 계획 확인 필요</span>
+            </div>
+          )}
+          {calendarSyncWarning && (
+            <div className="focus-impact-alert focus-impact-alert-danger" role="status">
+              <strong>Google Calendar 확인 실패 — 외부 일정 충돌 판단이 제한됩니다.</strong>
+              <span>추천 작업 합계는 실제 가용 시간과 다를 수 있습니다.</span>
+            </div>
+          )}
+        </div>
+      )}
       {blocks.length === 0 ? (
         <FocusBlocksEmpty hasTasks={quests.some(isActive) || studyBlocks.some((block) => block.status === "pending" && block.date === today)} onAdd={onAdd} />
       ) : (
@@ -122,11 +144,14 @@ function FocusExecutionCard({ item, label, testId, timeZone, onComplete }: { ite
       <div className="focus-card-body" data-testid={testId}>
         <strong>{item.title}</strong>
         <p>{item.reason}</p>
+        <div className="focus-status-line">
+          <span className={`focus-status-chip focus-status-${item.executionStatus}`}>{executionStatusLabel(item, timeZone)}</span>
+        </div>
         <div className="focus-card-meta">
           <span>{item.expectedMinutes}분</span>
           <span>{categoryLabel(item.category)}</span>
           <span>중요도 {item.importance}</span>
-          <span>{statusLabel(item)}</span>
+          <span>{sourceStatusLabel(item)}</span>
         </div>
       </div>
       <button aria-label={`${item.title} 완료`} type="button" onClick={onComplete}><CheckIcon size={16} /></button>
@@ -164,15 +189,29 @@ function formatFocusTime(item: TodayFocusItem, timeZone: string) {
   if (!item.displayTime) return "오늘";
   const start = new Date(item.displayTime);
   const end = new Date(start.getTime() + item.expectedMinutes * 60_000);
-  const formatter = new Intl.DateTimeFormat("ko-KR", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  const formatter = timeFormatter(timeZone);
   return `${formatter.format(start)}-${formatter.format(end)}`;
+}
+
+function executionStatusLabel(item: TodayFocusItem, timeZone: string) {
+  if (item.executionStatus === "completed") return "완료됨";
+  if (item.executionStatus === "available_now") return "지금 실행 가능";
+  if (item.executionStatus === "needs_reschedule") return "재배치 필요 · 시간이 지났습니다";
+  if (!item.displayTime) return "지금 실행 가능";
+  const start = timeFormatter(timeZone).format(new Date(item.displayTime));
+  if (item.executionStatus === "delayed") return `지연됨 · 원래 ${start} 시작`;
+  return `예정됨 · ${start} 시작`;
+}
+
+function timeFormatter(timeZone: string) {
+  return new Intl.DateTimeFormat("ko-KR", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 }
 
 function categoryLabel(category: Quest["category"]) {
   return category === "work" ? "업무" : category === "personal" ? "개인" : category === "study" ? "학습" : category === "health" ? "건강" : "기타";
 }
 
-function statusLabel(item: TodayFocusItem) {
+function sourceStatusLabel(item: TodayFocusItem) {
   if (item.sourceType === "study_block") return "학습";
   return item.status === "overdue" ? "마감 지남" : item.status === "needs_attention" ? "확인 필요" : item.status === "due_today" ? "오늘" : "예정";
 }

@@ -56,13 +56,14 @@ it("keeps the signed-out dashboard calm when quests cannot be loaded", async () 
   expect(screen.queryByText("현재 남아 있는 할 일이 없습니다.")).not.toBeInTheDocument();
 });
 
-it("shows a retry action when a connected Google Calendar sync fails", async () => {
+it("reflects a connected Google Calendar sync failure in the Today Focus decision area", async () => {
   vi.mocked(getGoogleStatus).mockResolvedValue({ connected: true });
   vi.mocked(syncGoogleCalendar).mockRejectedValue(new Error("Calendar unavailable"));
 
   render(<Dashboard />);
 
-  expect(await screen.findByText("Google Calendar 일정을 가져오지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.")).toBeVisible();
+  expect(await screen.findAllByText("Google Calendar 확인 실패 — 외부 일정 충돌 판단이 제한됩니다.")).not.toHaveLength(0);
+  expect(screen.getByText("충돌 판단: 제한됨")).toBeVisible();
   expect(screen.getByRole("button", { name: "다시 시도" })).toBeVisible();
 });
 
@@ -72,19 +73,20 @@ it("opens task creation in a dialog", async () => {
   expect(screen.getByRole("dialog")).toBeVisible();
 });
 
-it("puts schedule change notifications directly below Today Focus and above StudyPlan", async () => {
-  vi.mocked(listUnreadNotifications).mockResolvedValue([{ id: "n-1", kind: "carryover", questId: "q-1", message: "어제 미완료 항목을 오늘로 이월했습니다." }]);
+it("puts schedule change summary directly in Today Focus and the detail panel below it", async () => {
+  vi.mocked(listUnreadNotifications).mockResolvedValue([{ id: "n-1", kind: "carryover", questId: "q-1", message: "어제 미완료 항목이 오늘로 이월되었습니다." }]);
   render(<Dashboard />);
 
   const focus = await screen.findByTestId("today-focus");
   const notification = await screen.findByTestId("schedule-change-panel");
   const studyPlanner = screen.getByTestId("study-plan-scheduler");
 
+  expect(await screen.findAllByText("오늘 일정 변경 1건 있음")).not.toHaveLength(0);
   expect(focus.compareDocumentPosition(notification) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(notification.compareDocumentPosition(studyPlanner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(screen.queryByText("어제 미완료 항목을 오늘로 이월했습니다.")).not.toBeInTheDocument();
+  expect(screen.queryByText("어제 미완료 항목이 오늘로 이월되었습니다.")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "변경 내역 보기" }));
-  expect(screen.getByText("어제 미완료 항목을 오늘로 이월했습니다.")).toBeVisible();
+  expect(screen.getByText("어제 미완료 항목이 오늘로 이월되었습니다.")).toBeVisible();
 });
 
 it("includes the study plan scheduler as a separate dashboard section", async () => {

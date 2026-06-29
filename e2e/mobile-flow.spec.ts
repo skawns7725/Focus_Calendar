@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.use({ viewport: { width: 390, height: 844 } });
 
-test("keeps Today Focus, schedule changes, and collapsed study plans within the mobile viewport", async ({ page }) => {
+test("keeps Today Focus decision signals, schedule changes, and collapsed study plans usable on mobile", async ({ page }) => {
   const plannedStart = new Date();
   const deadline = new Date(plannedStart.getTime() + 24 * 60 * 60_000).toISOString();
   const quests = [
@@ -14,10 +14,11 @@ test("keeps Today Focus, schedule changes, and collapsed study plans within the 
   await page.route("**/api/schedule/reconcile", (route) => route.fulfill({
     json: { carryovers: [], today: { placements: [], unplaced: [{ questId: "unplaced", reason: "insufficient_total_time" }] } }
   }));
-  await page.route("**/api/google/status", (route) => route.fulfill({ json: { connected: false } }));
+  await page.route("**/api/google/status", (route) => route.fulfill({ json: { connected: true } }));
+  await page.route("**/api/google/sync", (route) => route.fulfill({ status: 403, json: { error: "sync blocked" } }));
   await page.route("**/api/push/status", (route) => route.fulfill({ json: { configured: false, notificationPromptCompleted: true } }));
   await page.route("**/api/notifications", (route) => route.fulfill({
-    json: [{ id: "notification-1", kind: "carryover", questId: "unplaced", message: "미완료 항목을 오늘로 이월했습니다." }]
+    json: [{ id: "notification-1", kind: "carryover", questId: "unplaced", message: "미완료 항목이 오늘로 이월되었습니다." }]
   }));
   await page.route("**/api/study-plans", (route) => route.fulfill({ json: [studyPlan(plannedStart, 10)] }));
 
@@ -28,16 +29,23 @@ test("keeps Today Focus, schedule changes, and collapsed study plans within the 
   const studyPlanner = page.getByTestId("study-plan-scheduler");
   await expect(focusBlocks).toBeVisible();
   await expect(focusBlocks.getByTestId("current-focus-card")).toBeVisible();
+  await expect(page.getByText("추천 작업 합계: 330분")).toBeVisible();
+  await expect(page.locator(".focus-impact-alert-warning").getByText("오늘 일정 변경 1건 있음")).toBeVisible();
+  await expect(page.getByText("충돌 판단: 제한됨")).toBeVisible();
+  await expect(page.locator(".focus-impact-alert-danger").getByText("Google Calendar 확인 실패 — 외부 일정 충돌 판단이 제한됩니다.")).toBeVisible();
   await expect(changePanel).toBeVisible();
   await expect(studyPlanner).toBeVisible();
   await expect(page.getByTestId("study-block-item")).toHaveCount(3);
 
   const focusBox = await focusBlocks.boundingBox();
+  const changeSummaryBox = await page.locator(".focus-impact-alert-warning").getByText("오늘 일정 변경 1건 있음").boundingBox();
+  const calendarWarningBox = await page.getByText("충돌 판단: 제한됨").boundingBox();
   const changeBox = await changePanel.boundingBox();
   const studyBox = await studyPlanner.boundingBox();
   expect(focusBox?.y ?? 9999).toBeLessThan(changeBox?.y ?? 0);
   expect(changeBox?.y ?? 9999).toBeLessThan(studyBox?.y ?? 0);
-  expect(changeBox?.y ?? 9999).toBeLessThan(844 * 1.5);
+  expect(changeSummaryBox?.y ?? 9999).toBeLessThan(844);
+  expect(calendarWarningBox?.y ?? 9999).toBeLessThan(844);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
 
   await page.getByRole("button", { name: "전체 계획 보기" }).click();

@@ -5,7 +5,7 @@ import { TodayFocusBlocks } from "./today-focus-blocks";
 
 afterEach(cleanup);
 
-it("shows one current focus card and up to two next focus cards with reasons and time signals", () => {
+it("shows one current focus card and up to two next focus cards with clear time signals", () => {
   const onComplete = vi.fn();
   render(<TodayFocusBlocks
     quests={[
@@ -14,7 +14,7 @@ it("shows one current focus card and up to two next focus cards with reasons and
       quest({ id: "third", title: "영어 복습", category: "study", importance: 1, plannedStart: "2026-06-22T03:00:00.000Z", expectedMinutes: 20 }),
       quest({ id: "hidden", title: "네 번째 항목", category: "other", importance: 1, plannedStart: "2026-06-22T04:00:00.000Z", expectedMinutes: 15 })
     ]}
-    now={new Date("2026-06-22T01:00:00.000Z")}
+    now={new Date("2026-06-22T00:10:00.000Z")}
     timeZone="Asia/Seoul"
     availableMinutes={120}
     onComplete={onComplete}
@@ -24,8 +24,11 @@ it("shows one current focus card and up to two next focus cards with reasons and
   expect(screen.getByTestId("current-focus-card")).toHaveTextContent("보고서 초안");
   expect(screen.getAllByTestId("next-focus-card")).toHaveLength(2);
   expect(screen.getAllByTestId("today-focus-item")).toHaveLength(3);
-  expect(screen.getByText("오늘 추천 총 소요 시간: 110분")).toBeVisible();
-  expect(screen.getByTestId("today-available-minutes")).toHaveTextContent("추천 기준 시간: 120분");
+  expect(screen.getByText("추천 작업 합계: 110분")).toBeVisible();
+  expect(screen.getByTestId("today-available-minutes")).toHaveTextContent("오늘 가용 시간: 120분");
+  expect(screen.getByText("남은 계획: 110분")).toBeVisible();
+  expect(screen.getByText("지연됨 · 원래 09:00 시작")).toBeVisible();
+  expect(screen.getByText("예정됨 · 11:00 시작")).toBeVisible();
   expect(screen.getByText("45분")).toBeVisible();
   expect(screen.getByText("업무")).toBeVisible();
   expect(screen.getByText("중요도 3")).toBeVisible();
@@ -33,6 +36,32 @@ it("shows one current focus card and up to two next focus cards with reasons and
 
   fireEvent.click(screen.getByRole("button", { name: "보고서 초안 완료" }));
   expect(onComplete).toHaveBeenCalledWith("first");
+});
+
+it("shows an explicit calendar conflict limitation warning when calendar sync failed", () => {
+  render(<TodayFocusBlocks
+    quests={[quest({ id: "first", title: "보고서 초안", plannedStart: "2026-06-22T00:00:00.000Z", expectedMinutes: 45 })]}
+    now={new Date("2026-06-22T01:00:00.000Z")}
+    timeZone="Asia/Seoul"
+    calendarSyncWarning="Google Calendar 확인 실패 — 외부 일정 충돌 판단이 제한됩니다."
+    onComplete={() => undefined}
+  />);
+
+  expect(screen.getByText("충돌 판단: 제한됨")).toBeVisible();
+  expect(screen.getByText("Google Calendar 확인 실패 — 외부 일정 충돌 판단이 제한됩니다.")).toBeVisible();
+});
+
+it("shows a compact schedule-change summary near Today Focus", () => {
+  render(<TodayFocusBlocks
+    quests={[quest({ id: "first", title: "보고서 초안", plannedStart: "2026-06-22T00:00:00.000Z" })]}
+    now={new Date("2026-06-22T01:00:00.000Z")}
+    timeZone="Asia/Seoul"
+    scheduleChangeCount={3}
+    onComplete={() => undefined}
+  />);
+
+  expect(screen.getByText("오늘 일정 변경 3건 있음")).toBeVisible();
+  expect(screen.getByText("변경된 계획 확인 필요")).toBeVisible();
 });
 
 it("shows the requested empty-state copy and opens task creation", () => {
@@ -48,7 +77,7 @@ it("shows the requested empty-state copy and opens task creation", () => {
 it("keeps tasks that could not be scheduled visible with concrete reasons", () => {
   render(<TodayFocusBlocks
     quests={[
-      quest({ id: "placed", title: "배치된 일", plannedStart: "2026-06-22T00:00:00.000Z" }),
+      quest({ id: "placed", title: "배치됨", plannedStart: "2026-06-22T00:00:00.000Z" }),
       quest({ id: "unplaced", title: "배치되지 않은 일", plannedStart: null, expectedMinutes: 90 })
     ]}
     now={new Date("2026-06-22T01:00:00.000Z")}

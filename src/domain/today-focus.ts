@@ -3,6 +3,7 @@ import { toLocalDate } from "./time-zone";
 import type { Quest } from "./types";
 
 export type TodayFocusSourceType = "quest" | "study_block";
+export type TodayFocusExecutionStatus = "available_now" | "scheduled" | "delayed" | "needs_reschedule" | "completed";
 
 export interface TodayFocusItem {
   sourceType: TodayFocusSourceType;
@@ -11,6 +12,7 @@ export interface TodayFocusItem {
   expectedMinutes: number;
   category: Quest["category"];
   status: Quest["status"] | StudyBlock["status"];
+  executionStatus: TodayFocusExecutionStatus;
   reason: string;
   sortTime: string | null;
   displayTime: string | null;
@@ -29,6 +31,7 @@ export function buildTodayFocusItems(input: {
   timeZone?: string;
 }): TodayFocusItem[] {
   const timeZone = input.timeZone ?? "Asia/Seoul";
+  const now = input.now ?? new Date();
   const questItems = input.quests
     .filter((quest) => quest.plannedStart
       && quest.status !== "completed"
@@ -41,6 +44,7 @@ export function buildTodayFocusItems(input: {
       expectedMinutes: quest.expectedMinutes,
       category: quest.category,
       status: quest.status,
+      executionStatus: executionStatusForScheduledItem(quest.plannedStart, quest.expectedMinutes, now),
       reason: questReason(quest, input.today, timeZone),
       sortTime: quest.plannedStart,
       displayTime: quest.plannedStart,
@@ -56,6 +60,7 @@ export function buildTodayFocusItems(input: {
       expectedMinutes: block.durationMinutes,
       category: "study",
       status: block.status,
+      executionStatus: "available_now",
       reason: "오늘 계획된 학습 블록이에요",
       sortTime: null,
       displayTime: null,
@@ -69,7 +74,22 @@ export function buildTodayFocusItems(input: {
   return [...questItems, ...studyItems].sort(compareTodayFocusItems);
 }
 
+function executionStatusForScheduledItem(plannedStart: string | null, expectedMinutes: number, now: Date): TodayFocusExecutionStatus {
+  if (!plannedStart) return "available_now";
+  const start = new Date(plannedStart);
+  const end = new Date(start.getTime() + expectedMinutes * 60_000);
+  if (now < start) return "scheduled";
+  if (now > end) return "needs_reschedule";
+  if (now > start) return "delayed";
+  return "available_now";
+}
+
 function compareTodayFocusItems(a: TodayFocusItem, b: TodayFocusItem) {
+  return executionPriority(a.executionStatus) - executionPriority(b.executionStatus)
+    || compareByScheduleAndPriority(a, b);
+}
+
+function compareByScheduleAndPriority(a: TodayFocusItem, b: TodayFocusItem) {
   if (a.sortTime && b.sortTime) return Date.parse(a.sortTime) - Date.parse(b.sortTime)
     || b.importance - a.importance
     || categoryPriority(b.category) - categoryPriority(a.category)
@@ -80,6 +100,14 @@ function compareTodayFocusItems(a: TodayFocusItem, b: TodayFocusItem) {
     || b.importance - a.importance
     || categoryPriority(b.category) - categoryPriority(a.category)
     || a.expectedMinutes - b.expectedMinutes;
+}
+
+function executionPriority(status: TodayFocusExecutionStatus) {
+  return status === "delayed" ? 0
+    : status === "available_now" ? 1
+      : status === "needs_reschedule" ? 2
+        : status === "scheduled" ? 3
+          : 4;
 }
 
 function categoryPriority(category: Quest["category"]) {

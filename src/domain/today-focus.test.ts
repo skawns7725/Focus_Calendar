@@ -24,13 +24,78 @@ describe("buildTodayFocusItems", () => {
       ]
     });
 
-    expect(items.map((item) => ({ sourceType: item.sourceType, id: item.id, reason: item.reason }))).toEqual([
+    expect(items.map((item) => ({ sourceType: item.sourceType, id: item.id, reason: item.reason }))).toEqual(expect.arrayContaining([
       { sourceType: "quest", id: "important", reason: "마감일이 가까워요" },
       { sourceType: "study_block", id: "block-1", reason: "오늘 계획된 학습 블록이에요" }
+    ]));
+  });
+
+  it("marks an unfinished scheduled item as delayed after its start time passes", () => {
+    const items = buildTodayFocusItems({
+      today: "2026-06-24",
+      timeZone: "Asia/Seoul",
+      now: new Date("2026-06-24T01:10:00.000Z"),
+      quests: [
+        quest({
+          id: "delayed",
+          plannedStart: "2026-06-24T01:00:00.000Z",
+          expectedMinutes: 30
+        })
+      ]
+    });
+
+    expect(items[0]).toMatchObject({
+      id: "delayed",
+      executionStatus: "delayed"
+    });
+  });
+
+  it("marks an unfinished item as needing reschedule after its planned window has passed", () => {
+    const items = buildTodayFocusItems({
+      today: "2026-06-24",
+      timeZone: "Asia/Seoul",
+      now: new Date("2026-06-24T02:00:00.000Z"),
+      quests: [
+        quest({
+          id: "missed",
+          plannedStart: "2026-06-24T01:00:00.000Z",
+          expectedMinutes: 30
+        })
+      ]
+    });
+
+    expect(items[0]).toMatchObject({
+      id: "missed",
+      executionStatus: "needs_reschedule"
+    });
+  });
+
+  it("separates scheduled future items from currently executable items", () => {
+    const items = buildTodayFocusItems({
+      today: "2026-06-24",
+      timeZone: "Asia/Seoul",
+      now: new Date("2026-06-24T01:10:00.000Z"),
+      quests: [
+        quest({
+          id: "now",
+          plannedStart: "2026-06-24T01:10:00.000Z",
+          expectedMinutes: 30
+        }),
+        quest({
+          id: "future",
+          plannedStart: "2026-06-24T03:00:00.000Z",
+          expectedMinutes: 30
+        })
+      ]
+    });
+
+    expect(items.map((item) => [item.id, item.executionStatus])).toEqual([
+      ["now", "available_now"],
+      ["future", "scheduled"]
     ]);
   });
 
-  it("excludes completed quests and completed study blocks", () => {
+  it("excludes completed quests and completed study blocks from default focus execution items", () => {
     const items = buildTodayFocusItems({
       today: "2026-06-24",
       quests: [

@@ -27,8 +27,11 @@ test("keeps Today Focus decision signals, schedule changes, and collapsed study 
   const focusBlocks = page.getByTestId("today-focus");
   const changePanel = page.getByTestId("schedule-change-panel");
   const studyPlanner = page.getByTestId("study-plan-scheduler");
+  const statusChips = focusBlocks.locator(".focus-status-chip");
   await expect(focusBlocks).toBeVisible();
   await expect(focusBlocks.getByTestId("current-focus-card")).toBeVisible();
+  await expect(statusChips).toHaveCount(3);
+  await expect(page.getByText("추천 기준 시간")).toHaveCount(0);
   await expect(page.getByText("추천 작업 합계: 330분")).toBeVisible();
   await expect(page.locator(".focus-impact-alert-warning").getByText("오늘 일정 변경 1건 있음")).toBeVisible();
   await expect(page.getByText("충돌 판단: 제한됨")).toBeVisible();
@@ -38,6 +41,7 @@ test("keeps Today Focus decision signals, schedule changes, and collapsed study 
   await expect(page.getByTestId("study-block-item")).toHaveCount(3);
 
   const focusBox = await focusBlocks.boundingBox();
+  const statusBox = await statusChips.first().boundingBox();
   const changeSummaryBox = await page.locator(".focus-impact-alert-warning").getByText("오늘 일정 변경 1건 있음").boundingBox();
   const calendarWarningBox = await page.getByText("충돌 판단: 제한됨").boundingBox();
   const changeBox = await changePanel.boundingBox();
@@ -46,6 +50,7 @@ test("keeps Today Focus decision signals, schedule changes, and collapsed study 
   expect(changeBox?.y ?? 9999).toBeLessThan(studyBox?.y ?? 0);
   expect(changeSummaryBox?.y ?? 9999).toBeLessThan(844);
   expect(calendarWarningBox?.y ?? 9999).toBeLessThan(844);
+  expect(statusBox?.y ?? 9999).toBeLessThan(844);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
 
   await page.getByRole("button", { name: "전체 계획 보기" }).click();

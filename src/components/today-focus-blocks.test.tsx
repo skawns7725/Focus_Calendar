@@ -51,6 +51,18 @@ it("shows an explicit calendar conflict limitation warning when calendar sync fa
   expect(screen.getByText("Google Calendar 확인 실패 — 외부 일정 충돌 판단이 제한됩니다.")).toBeVisible();
 });
 
+it("shows a reschedule-needed label instead of presenting a missed item as executable now", () => {
+  render(<TodayFocusBlocks
+    quests={[quest({ id: "missed", title: "吏???묒뾽", plannedStart: "2026-06-22T00:00:00.000Z", expectedMinutes: 30 })]}
+    now={new Date("2026-06-22T01:00:00.000Z")}
+    timeZone="Asia/Seoul"
+    onComplete={() => undefined}
+  />);
+
+  expect(screen.getByText("재배치 필요 · 시간이 지났습니다")).toBeVisible();
+  expect(screen.queryByText("지금 실행 가능")).not.toBeInTheDocument();
+});
+
 it("shows a compact schedule-change summary near Today Focus", () => {
   render(<TodayFocusBlocks
     quests={[quest({ id: "first", title: "보고서 초안", plannedStart: "2026-06-22T00:00:00.000Z" })]}

@@ -86,7 +86,7 @@ export function TodayFocusBlocks({
           )}
           {calendarSyncWarning && (
             <div className="focus-impact-alert focus-impact-alert-danger" role="status">
-              <strong>Google Calendar 확인 실패 — 외부 일정 충돌 판단이 제한됩니다.</strong>
+              <strong>{calendarSyncWarning}</strong>
               <span>추천 작업 합계는 실제 가용 시간과 다를 수 있습니다.</span>
             </div>
           )}

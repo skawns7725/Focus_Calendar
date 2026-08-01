@@ -56,7 +56,7 @@ export function Dashboard() {
     if (google?.connected) {
       await syncGoogleCalendar()
         .then(() => setSyncWarning(null))
-        .catch(() => setSyncWarning("Google Calendar 확인 실패 — 외부 일정 충돌 판단이 제한됩니다."));
+        .catch(() => setSyncWarning("Google Calendar 확인 실패 때문에 일정 충돌 판단이 제한됩니다."));
     }
     await refresh();
     await refreshStudyPlans();
@@ -148,31 +148,53 @@ export function Dashboard() {
       subtitle="할 일을 입력하면 오늘의 빈 시간에 자동으로 배치합니다."
       actions={<button className="primary-button" data-testid="add-task-button" type="button" onClick={() => setShowForm((visible) => !visible)}><PlusIcon size={16} />할 일 추가</button>}
     >
-      <TodayFocusBlocks
-        quests={quests}
-        studyBlocks={studyPlans.flatMap((plan) => plan.blocks)}
-        unplacedReasons={unplacedReasons}
-        calendarSyncWarning={syncWarning}
-        scheduleChangeCount={notifications.length}
-        onComplete={(id) => void finishQuest(id)}
-        onCompleteStudyBlock={(id) => void finishStudyBlock(id)}
-        onAdd={() => setShowForm(true)}
-      />
-      <AttentionPanel notifications={notifications} onRead={(ids) => void readNotifications(ids)} />
-      <section className="dashboard-summary">
-        <div><span>오늘 완료</span><strong>{completedCount}</strong></div>
-        <div><span>남은 할 일</span><strong>{remainingCount}</strong></div>
-        <div><span>정렬 기준</span><strong className="summary-text">마감일 우선</strong></div>
+      <section className="command-center" aria-label="Command center">
+        <TodayFocusBlocks
+          quests={quests}
+          studyBlocks={studyPlans.flatMap((plan) => plan.blocks)}
+          unplacedReasons={unplacedReasons}
+          calendarSyncWarning={syncWarning}
+          scheduleChangeCount={notifications.length}
+          onComplete={(id) => void finishQuest(id)}
+          onCompleteStudyBlock={(id) => void finishStudyBlock(id)}
+          onAdd={() => setShowForm(true)}
+        />
+        {syncWarning && (
+          <div className="sync-warning command-sync-warning" data-testid="command-sync-warning" role="status">
+            <span>{syncWarning}</span>
+            <button className="secondary-button" type="button" onClick={() => void syncAndRefresh()}>다시 시도</button>
+          </div>
+        )}
+        <AttentionPanel notifications={notifications} onRead={(ids) => void readNotifications(ids)} />
       </section>
-      {remainingCount > 0 && <NowPanel quests={quests} onAdd={() => setShowForm(true)} onComplete={(id) => void finishQuest(id)} />}
-      <StudyPlanScheduler onChanged={refreshStudyPlans} />
-      {syncWarning && <div className="sync-warning" role="status"><span>{syncWarning}</span><button className="secondary-button" type="button" onClick={() => void syncAndRefresh()}>다시 시도</button></div>}
+
+      <section className="dashboard-detail-area" aria-label="Detail and evidence area" data-testid="dashboard-detail-area">
+        <details className="dashboard-detail-panel" data-testid="study-plan-detail">
+          <summary><span>Study Plan Scheduler</span><strong>시험 공부계획 설정</strong></summary>
+          <StudyPlanScheduler onChanged={refreshStudyPlans} />
+        </details>
+
+        <details className="dashboard-detail-panel" data-testid="dashboard-summary-detail">
+          <summary><span>Dashboard Summary</span><strong>오늘 상태 확인</strong></summary>
+          <section className="dashboard-summary">
+            <div><span>오늘 완료</span><strong>{completedCount}</strong></div>
+            <div><span>남은 할 일</span><strong>{remainingCount}</strong></div>
+            <div><span>정렬 기준</span><strong className="summary-text">마감일 우선</strong></div>
+          </section>
+          {remainingCount > 0 && <NowPanel quests={quests} onAdd={() => setShowForm(true)} onComplete={(id) => void finishQuest(id)} />}
+        </details>
+
+        {remainingCount > 0 && (
+          <details className="dashboard-detail-panel" data-testid="quest-list-detail">
+            <summary><span>QuestList</span><strong>지금 처리할 순서 전체</strong></summary>
+            <div className="list-heading"><div><p className="eyebrow">우선순위 목록</p><h2>지금 처리할 순서</h2></div><span>마감 · 중요도 · 이월 횟수</span></div>
+            <QuestList quests={quests} onComplete={finishQuest} onDelete={abandon} onNearestDate={(id) => void moveNearest(id)} onEdit={(id) => setEditingQuest(quests.find((quest) => quest.id === id) ?? null)} />
+          </details>
+        )}
+      </section>
+
       {pushStatus && <NotificationPreferencePrompt status={pushStatus} onEnable={() => void enableNotifications()} onDisable={() => void disableNotifications()} />}
       {(showForm || editingQuest) && <TaskModal key={editingQuest?.id ?? "new"} initialValue={editingQuest ?? undefined} onClose={() => editingQuest ? setEditingQuest(null) : setShowForm(false)} onSubmit={editingQuest ? editQuest : addQuest} />}
-      {remainingCount > 0 && <>
-        <div className="list-heading"><div><p className="eyebrow">우선순위 목록</p><h2>지금 처리할 순서</h2></div><span>마감 · 중요도 · 이월 횟수</span></div>
-        <QuestList quests={quests} onComplete={finishQuest} onDelete={abandon} onNearestDate={(id) => void moveNearest(id)} onEdit={(id) => setEditingQuest(quests.find((quest) => quest.id === id) ?? null)} />
-      </>}
       {toastVisible && <CompletionToast completedCount={completedCount} />}
     </AppShell>
   );

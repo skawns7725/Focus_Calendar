@@ -26,7 +26,8 @@ test("keeps Today Focus decision signals, schedule changes, and collapsed study 
 
   const focusBlocks = page.getByTestId("today-focus");
   const changePanel = page.getByTestId("schedule-change-panel");
-  const studyPlanner = page.getByTestId("study-plan-scheduler");
+  const detailArea = page.getByTestId("dashboard-detail-area");
+  const studyDetail = page.getByTestId("study-plan-detail");
   const statusChips = focusBlocks.locator(".focus-status-chip");
   await expect(focusBlocks).toBeVisible();
   await expect(focusBlocks.getByTestId("current-focus-card")).toBeVisible();
@@ -35,24 +36,29 @@ test("keeps Today Focus decision signals, schedule changes, and collapsed study 
   await expect(page.getByText("추천 작업 합계: 330분")).toBeVisible();
   await expect(page.locator(".focus-impact-alert-warning").getByText("오늘 일정 변경 1건 있음")).toBeVisible();
   await expect(page.getByText("충돌 판단: 제한됨")).toBeVisible();
-  await expect(page.locator(".focus-impact-alert-danger").getByText("Google Calendar 확인 실패 — 외부 일정 충돌 판단이 제한됩니다.")).toBeVisible();
+  await expect(page.locator(".focus-impact-alert-danger").getByText("Google Calendar 확인 실패 때문에 일정 충돌 판단이 제한됩니다.")).toBeVisible();
+  await expect(page.getByTestId("command-sync-warning")).toBeVisible();
   await expect(changePanel).toBeVisible();
-  await expect(studyPlanner).toBeVisible();
-  await expect(page.getByTestId("study-block-item")).toHaveCount(3);
+  await expect(detailArea).toBeVisible();
+  await expect(studyDetail).toBeVisible();
+  await expect(studyDetail).not.toHaveAttribute("open", "");
+  await expect(page.getByTestId("study-block-item").first()).not.toBeVisible();
 
   const focusBox = await focusBlocks.boundingBox();
   const statusBox = await statusChips.first().boundingBox();
   const changeSummaryBox = await page.locator(".focus-impact-alert-warning").getByText("오늘 일정 변경 1건 있음").boundingBox();
   const calendarWarningBox = await page.getByText("충돌 판단: 제한됨").boundingBox();
   const changeBox = await changePanel.boundingBox();
-  const studyBox = await studyPlanner.boundingBox();
+  const detailBox = await detailArea.boundingBox();
   expect(focusBox?.y ?? 9999).toBeLessThan(changeBox?.y ?? 0);
-  expect(changeBox?.y ?? 9999).toBeLessThan(studyBox?.y ?? 0);
+  expect(changeBox?.y ?? 9999).toBeLessThan(detailBox?.y ?? 0);
   expect(changeSummaryBox?.y ?? 9999).toBeLessThan(844);
   expect(calendarWarningBox?.y ?? 9999).toBeLessThan(844);
   expect(statusBox?.y ?? 9999).toBeLessThan(844);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
 
+  await studyDetail.locator("summary").click();
+  await expect(page.getByTestId("study-block-item")).toHaveCount(3);
   await page.getByRole("button", { name: "전체 계획 보기" }).click();
   await expect(page.getByTestId("study-block-item")).toHaveCount(10);
 });

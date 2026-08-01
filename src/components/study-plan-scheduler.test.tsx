@@ -67,14 +67,14 @@ it("shows only today's unfinished StudyBlocks up to three by default", async () 
   expect(screen.queryByText("내일 학습 · 50분")).not.toBeInTheDocument();
 });
 
-it("shows every StudyBlock only after expanding the full plan", async () => {
+it("shows unfinished StudyBlocks only after expanding the full plan", async () => {
   render(<StudyPlanScheduler />);
 
   fireEvent.click(await screen.findByRole("button", { name: "전체 계획 보기" }));
 
-  expect(screen.getAllByTestId("study-block-item")).toHaveLength(6);
+  expect(screen.getAllByTestId("study-block-item")).toHaveLength(5);
   expect(screen.getByText("오늘 최종복습 · 50분")).toBeVisible();
-  expect(screen.getByText("완료된 학습 · 50분")).toBeVisible();
+  expect(screen.queryByText("완료된 학습 · 50분")).not.toBeInTheDocument();
   expect(screen.getByText("내일 학습 · 50분")).toBeVisible();
 });
 

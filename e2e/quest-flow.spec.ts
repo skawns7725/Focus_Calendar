@@ -33,6 +33,7 @@ test("creates and completes a quest from the priority list", async ({ page }) =>
   await page.locator('[name="expectedMinutes"]').fill("60");
   await page.locator(".quest-form").locator('[type="submit"]').click();
 
+  await page.getByTestId("quest-list-detail").locator("summary").click();
   const quest = page.getByTestId("quest-card").filter({ hasText: title });
   await expect(quest).toBeVisible();
   await quest.getByTestId("quest-complete-button").click();

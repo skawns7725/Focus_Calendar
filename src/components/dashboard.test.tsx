@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { completeQuest, completeStudyBlock, getGoogleStatus, listQuests, listStudyPlans, listUnreadNotifications, reconcileSchedule, syncGoogleCalendar } from "@/client/api";
 import type { StudyPlanView } from "@/domain/study-plan";
@@ -53,18 +53,24 @@ it("keeps the signed-out dashboard calm when quests cannot be loaded", async () 
   render(<Dashboard />);
 
   expect(await screen.findByText("첫 할 일을 추가해보세요.")).toBeVisible();
-  expect(screen.queryByText("현재 남아 있는 할 일이 없습니다.")).not.toBeInTheDocument();
+  expect(screen.queryByText("현재 남아 있는 일이 없습니다.")).not.toBeInTheDocument();
 });
 
-it("reflects a connected Google Calendar sync failure in the Today Focus decision area", async () => {
+it("reflects a connected Google Calendar sync failure in the command-center", async () => {
   vi.mocked(getGoogleStatus).mockResolvedValue({ connected: true });
   vi.mocked(syncGoogleCalendar).mockRejectedValue(new Error("Calendar unavailable"));
 
   render(<Dashboard />);
 
-  expect(await screen.findAllByText("Google Calendar 확인 실패 — 외부 일정 충돌 판단이 제한됩니다.")).not.toHaveLength(0);
+  const focus = await screen.findByTestId("today-focus");
+  const retryWarning = await screen.findByTestId("command-sync-warning");
+  const detailArea = screen.getByTestId("dashboard-detail-area");
+
+  expect(await screen.findAllByText("Google Calendar 확인 실패 때문에 일정 충돌 판단이 제한됩니다.")).not.toHaveLength(0);
   expect(screen.getByText("충돌 판단: 제한됨")).toBeVisible();
-  expect(screen.getByRole("button", { name: "다시 시도" })).toBeVisible();
+  expect(focus.compareDocumentPosition(retryWarning) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(retryWarning.compareDocumentPosition(detailArea) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(retryWarning.querySelector("button")).toBeVisible();
 });
 
 it("opens task creation in a dialog", async () => {
@@ -73,28 +79,34 @@ it("opens task creation in a dialog", async () => {
   expect(screen.getByRole("dialog")).toBeVisible();
 });
 
-it("puts schedule change summary directly in Today Focus and the detail panel below it", async () => {
-  vi.mocked(listUnreadNotifications).mockResolvedValue([{ id: "n-1", kind: "carryover", questId: "q-1", message: "어제 미완료 항목이 오늘로 이월되었습니다." }]);
+it("puts schedule change summary in the command-center and keeps detail areas collapsed", async () => {
+  vi.mocked(listUnreadNotifications).mockResolvedValue([{ id: "n-1", kind: "carryover", questId: "q-1", message: "이전 미완료 항목이 오늘로 이월되었습니다." }]);
   render(<Dashboard />);
 
   const focus = await screen.findByTestId("today-focus");
   const notification = await screen.findByTestId("schedule-change-panel");
-  const studyPlanner = screen.getByTestId("study-plan-scheduler");
+  const detailArea = screen.getByTestId("dashboard-detail-area");
 
   expect(await screen.findAllByText("오늘 일정 변경 1건 있음")).not.toHaveLength(0);
   expect(focus.compareDocumentPosition(notification) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(notification.compareDocumentPosition(studyPlanner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(screen.queryByText("어제 미완료 항목이 오늘로 이월되었습니다.")).not.toBeInTheDocument();
+  expect(notification.compareDocumentPosition(detailArea) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.getByTestId("study-plan-detail")).not.toHaveAttribute("open");
+  expect(screen.getByTestId("dashboard-summary-detail")).not.toHaveAttribute("open");
+  expect(screen.getByTestId("quest-list-detail")).not.toHaveAttribute("open");
+  expect(screen.queryByText("이전 미완료 항목이 오늘로 이월되었습니다.")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "변경 내역 보기" }));
-  expect(screen.getByText("어제 미완료 항목이 오늘로 이월되었습니다.")).toBeVisible();
+  expect(screen.getByText("이전 미완료 항목이 오늘로 이월되었습니다.")).toBeVisible();
 });
 
-it("includes the study plan scheduler as a separate dashboard section", async () => {
+it("keeps the study planner below Today Focus as a collapsed detail section", async () => {
   render(<Dashboard />);
 
   const focusHeading = await screen.findByRole("heading", { name: "오늘 지금 할 일" });
-  const studyHeading = screen.getByRole("heading", { name: "시험 공부계획" });
-  expect(focusHeading.compareDocumentPosition(studyHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const studyDetail = screen.getByTestId("study-plan-detail");
+  expect(focusHeading.compareDocumentPosition(studyDetail) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(studyDetail).not.toHaveAttribute("open");
+  fireEvent.click(studyDetail.querySelector("summary")!);
+  expect(screen.getByTestId("study-plan-scheduler")).toBeVisible();
 });
 
 it("removes a completed task immediately and keeps it hidden after refresh", async () => {
@@ -154,7 +166,7 @@ it("shows today's study blocks in Today Focus and refreshes them after completio
   fireEvent.click(screen.getAllByRole("button", { name: "수학 개념학습 완료" })[0]);
 
   expect(completeStudyBlock).toHaveBeenCalledWith("study-block-1");
-  expect(await screen.findByText("첫 할 일을 추가해보세요.")).toBeVisible();
+  await waitFor(() => expect(screen.getByText("첫 할 일을 추가해보세요.")).toBeVisible());
 });
 
 function todayString() {

@@ -94,7 +94,7 @@ export function StudyPlanScheduler({ onChanged }: { onChanged?(): void | Promise
     {plans.length === 0 ? <div className="study-plan-empty"><strong>아직 시험계획이 없습니다.</strong><span>시험 정보를 입력하면 날짜별 공부 블록이 자동으로 생성됩니다.</span></div> : <div className="study-plan-list">
       {plans.map((plan) => {
         const expanded = expandedPlans[plan.id] ?? false;
-        const visibleBlocks = expanded ? plan.blocks : visibleStudyBlocks(plan.blocks, today);
+        const visibleBlocks = expanded ? unfinishedStudyBlocks(plan.blocks) : visibleStudyBlocks(plan.blocks, today);
         return <article className="study-plan-card" key={plan.id}>
           <header>
             <div><span className="study-plan-subject">{plan.examDate}</span><h3>{plan.examName} · {plan.subject}</h3></div>
@@ -126,6 +126,12 @@ function visibleStudyBlocks(blocks: StudyBlock[], today: string) {
     .filter((block) => block.status !== "completed" && block.date === today)
     .sort((a, b) => a.sequence - b.sequence)
     .slice(0, 3);
+}
+
+function unfinishedStudyBlocks(blocks: StudyBlock[]) {
+  return blocks
+    .filter((block) => block.status !== "completed")
+    .sort((a, b) => a.sequence - b.sequence);
 }
 
 function updateBlockStatus(plans: StudyPlanView[], blockId: string, status: StudyBlock["status"]) {
